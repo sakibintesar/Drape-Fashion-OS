@@ -5,4 +5,5 @@ RUN cd backend && npm install --production
 COPY . .
 WORKDIR /app/backend
 EXPOSE 3000
-CMD ["node", "server.js"]
+CMD ["sh", "-c", "node backend/seed.js && node backend/server.js"]
+
