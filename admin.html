@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DRAPE Admin — Fashion OS</title>
+<link rel="stylesheet" href="styles.css">
+<style>body{overflow:hidden;}</style>
+</head>
+<body>
+<div id="toast"></div>
+
+<!-- LOGIN OVERLAY -->
+<div class="login-overlay" id="loginOverlay">
+  <div class="login-box">
+    <div class="login-logo">DR<span>A</span>PE</div>
+    <div class="login-tag">Admin Portal · Secure Access</div>
+    <div class="login-error" id="loginError">Incorrect password. Please try again.</div>
+    <input type="password" class="login-input" id="loginPassword" placeholder="Enter admin password" onkeydown="if(event.key==='Enter')doLogin()">
+    <button class="login-btn" onclick="doLogin()">Sign In →</button>
+    <div style="font-size:11px;color:var(--slate)">Default password: <strong>drape2026</strong> · Change in production.</div>
+  </div>
+</div>
+
+<nav>
+  <div class="nav-logo" onclick="showAdminPage('dashboard',document.querySelector('.admin-nav-btn'))">DR<span>A</span>PE</div>
+  <div class="nav-links">
+    <button class="nav-link active" onclick="showAdminPage('dashboard',document.querySelector('.admin-nav-btn'))">Admin</button>
+    <button class="nav-link" onclick="showPage('crm')">🧠 AI CRM</button>
+    <button class="nav-link" onclick="showPage('social')">📱 Social</button>
+    <button class="nav-link" onclick="showPage('whatsapp')">💬 WhatsApp</button>
+  </div>
+  <button class="logout-btn" onclick="doLogout()">Logout →</button>
+</nav>
+
+<div class="page active" id="page-admin">
+  <div class="admin-layout">
+    <div class="admin-sidebar">
+      <div class="admin-sidebar-title">FashionOS Admin</div>
+      <button class="admin-nav-btn active" onclick="showAdminPage('dashboard',this)">📊 Dashboard</button>
+      <button class="admin-nav-btn" onclick="showAdminPage('orders',this)">📦 Orders</button>
+      <button class="admin-nav-btn" onclick="showAdminPage('inventory',this)">👗 Inventory</button>
+      <button class="admin-nav-btn" onclick="showAdminPage('vendors',this)">🏢 Vendors</button>
+      <button class="admin-nav-btn" onclick="showAdminPage('customers',this)">👥 Customers</button>
+      <button class="admin-nav-btn" onclick="showAdminPage('analytics',this)">📈 Analytics</button>
+    </div>
+    <div class="admin-content">
+      <div class="admin-page active" id="admin-dashboard">
+        <div class="admin-section-header"><div class="admin-section-title display">Dashboard</div><span class="mono" style="font-size:10px;color:var(--slate)" id="adminDate"></span></div>
+        <div class="stats-grid">
+          <div class="stat-card"><div class="stat-label">Total Revenue</div><div class="stat-value display" id="st_rev">৳0</div><div class="stat-delta up" id="st_rev_d"></div></div>
+          <div class="stat-card"><div class="stat-label">Orders</div><div class="stat-value display" id="st_ord">0</div><div class="stat-delta up" id="st_ord_d"></div></div>
+          <div class="stat-card"><div class="stat-label">Products</div><div class="stat-value display" id="st_prod">0</div><div class="stat-delta" style="color:var(--slate)">in collection</div></div>
+          <div class="stat-card"><div class="stat-label">Customers</div><div class="stat-value display" id="st_cust">0</div><div class="stat-delta up" id="st_cust_d"></div></div>
+        </div>
+        <div class="table-wrapper" style="padding:20px;margin-bottom:20px">
+          <div style="font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--slate);margin-bottom:3px">7-Day Revenue</div>
+          <div class="mini-chart" id="revChart"></div>
+          <div style="display:flex;gap:5px;margin-top:4px" id="chartLbls"></div>
+        </div>
+        <div class="admin-section-header" style="margin-bottom:13px"><div style="font-size:14px;font-weight:500">Recent Orders</div><button class="admin-btn sm" onclick="showAdminPage('orders',document.querySelectorAll('.admin-nav-btn')[1])">All →</button></div>
+        <div class="table-wrapper"><table class="admin-table"><thead><tr><th>Order ID</th><th>Customer</th><th>Items</th><th>Total</th><th>Status</th><th>Date</th></tr></thead><tbody id="recentOBody"></tbody></table></div>
+      </div>
+      <div class="admin-page" id="admin-orders">
+        <div class="admin-section-header"><div class="admin-section-title display">Orders</div></div>
+        <div class="table-wrapper"><table class="admin-table"><thead><tr><th>Order ID</th><th>Customer</th><th>Items</th><th>Total</th><th>Pay</th><th>Status</th><th>Date</th><th></th></tr></thead><tbody id="allOBody"></tbody></table></div>
+      </div>
+      <div class="admin-page" id="admin-inventory">
+        <div class="admin-section-header"><div class="admin-section-title display">Inventory</div><button class="admin-btn" onclick="openAddProd()">+ Add Product</button></div>
+        <div class="table-wrapper"><table class="admin-table"><thead><tr><th>Product</th><th>Vendor</th><th>Category</th><th>Price</th><th>Colors</th><th>Variants</th><th>Stock</th><th>Status</th><th></th></tr></thead><tbody id="invBody"></tbody></table></div>
+      </div>
+      <div class="admin-page" id="admin-vendors">
+        <div class="admin-section-header"><div class="admin-section-title display">Vendor Brands</div></div>
+        <div class="table-wrapper"><table class="admin-table"><thead><tr><th>Brand</th><th>Category</th><th>Location</th><th>SKUs</th><th>Revenue</th><th>Status</th><th></th></tr></thead><tbody id="vendBody"></tbody></table></div>
+      </div>
+      <div class="admin-page" id="admin-customers">
+        <div class="admin-section-header"><div class="admin-section-title display">Customers</div></div>
+        <div class="table-wrapper"><table class="admin-table"><thead><tr><th>Name</th><th>Email</th><th>City</th><th>Orders</th><th>Spent</th><th>CRM</th></tr></thead><tbody id="custBody"></tbody></table></div>
+      </div>
+      <div class="admin-page" id="admin-analytics">
+        <div class="admin-section-header"><div class="admin-section-title display">Analytics</div></div>
+        <div class="stats-grid">
+          <div class="stat-card"><div class="stat-label">Avg Order Value</div><div class="stat-value display" id="an_aov">৳0</div></div>
+          <div class="stat-card"><div class="stat-label">Top Category</div><div class="stat-value display" id="an_topcat" style="font-size:20px">—</div></div>
+          <div class="stat-card"><div class="stat-label">Top Vendor</div><div class="stat-value display" id="an_topvend" style="font-size:16px">—</div></div>
+          <div class="stat-card"><div class="stat-label">Return Rate</div><div class="stat-value display" id="an_ret">2.1%</div></div>
+        </div>
+        <div class="table-wrapper" style="padding:22px;margin-top:12px">
+          <div style="font-size:12px;font-weight:500;margin-bottom:16px">Top Products</div>
+          <table class="admin-table"><thead><tr><th>Product</th><th>Vendor</th><th>Category</th><th>Colors</th><th>Units Sold</th><th>Revenue</th></tr></thead><tbody id="topPBody"></tbody></table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="page" id="page-crm">
+  <div class="crm-layout">
+    <div class="crm-sidebar">
+      <div class="crm-sidebar-header">
+        <div style="display:flex;align-items:center;gap:7px;margin-bottom:10px">
+          <span style="font-family:'Cormorant Garamond',serif;font-size:18px;font-weight:300">AI CRM</span>
+          <span class="ai-badge">Claude-Powered</span>
+        </div>
+        <input class="crm-search" id="crmSearch" placeholder="Search customers..." oninput="filterCRM(this.value)">
+      </div>
+      <div class="crm-tabs">
+        <button class="crm-tab active" onclick="filterCRMTab('all',this)">All</button>
+        <button class="crm-tab" onclick="filterCRMTab('hot',this)">🔴 Hot</button>
+        <button class="crm-tab" onclick="filterCRMTab('vip',this)">⭐ VIP</button>
+        <button class="crm-tab" onclick="filterCRMTab('fu',this)">📋 Follow-Up</button>
+      </div>
+      <div class="crm-list" id="crmList"></div>
+    </div>
+    <div class="crm-main" id="crmMain">
+      <div style="flex:1;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:10px;color:var(--slate)">
+        <div style="font-size:44px">🧠</div>
+        <div style="font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:300">Select a customer</div>
+        <div style="font-size:12px">to view AI-powered insights &amp; follow-up tools</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="page" id="page-social">
+  <div class="social-layout">
+    <div class="social-sidebar">
+      <div class="social-sidebar-title">Channels</div>
+      <button class="social-nav-btn active" onclick="showSocialPage('overview',this)">📊 Overview</button>
+      <button class="social-nav-btn" onclick="showSocialPage('instagram',this)">📸 Instagram</button>
+      <button class="social-nav-btn" onclick="showSocialPage('facebook',this)">👥 Facebook</button>
+      <button class="social-nav-btn" onclick="showSocialPage('tiktok',this)">🎵 TikTok</button>
+      <button class="social-nav-btn" onclick="showSocialPage('linkedin',this)">💼 LinkedIn</button>
+      <button class="social-nav-btn" onclick="showSocialPage('scheduler',this)">📅 Scheduler</button>
+    </div>
+    <div class="social-content">
+      <div class="social-page active" id="social-overview">
+        <div class="social-header"><div class="social-title display">Social Media Hub</div><button class="admin-btn" onclick="showSocialPage('scheduler',document.querySelectorAll('.social-nav-btn')[5])">+ New Post</button></div>
+        <div class="social-analytics">
+          <div class="stat-card"><div class="stat-label">Total Followers</div><div class="stat-value display" id="soc_followers">0</div><div class="stat-delta up">+234 this week</div></div>
+          <div class="stat-card"><div class="stat-label">Total Reach</div><div class="stat-value display" id="soc_reach">0</div><div class="stat-delta up">+12.4%</div></div>
+          <div class="stat-card"><div class="stat-label">Engagement Rate</div><div class="stat-value display">4.8%</div><div class="stat-delta up">+0.3%</div></div>
+          <div class="stat-card"><div class="stat-label">Link Clicks</div><div class="stat-value display">1.2K</div><div class="stat-delta up">+18%</div></div>
+        </div>
+        <div class="analytics-bar-chart">
+          <div class="analytics-bar-chart-title">Followers by Platform</div>
+          <div class="bar-row"><div class="bar-label">Instagram</div><div class="bar-track"><div class="bar-fill" style="width:78%"></div></div><div class="bar-val">12.4K</div></div>
+          <div class="bar-row"><div class="bar-label">Facebook</div><div class="bar-track"><div class="bar-fill" style="width:52%"></div></div><div class="bar-val">8.1K</div></div>
+          <div class="bar-row"><div class="bar-label">TikTok</div><div class="bar-track"><div class="bar-fill" style="width:38%"></div></div><div class="bar-val">6.2K</div></div>
+          <div class="bar-row"><div class="bar-label">LinkedIn</div><div class="bar-track"><div class="bar-fill" style="width:14%"></div></div><div class="bar-val">2.1K</div></div>
+        </div>
+        <div id="platformCards"></div>
+      </div>
+      <!-- Social platform pages and scheduler same as v3 -->
+      <div class="social-page" id="social-instagram">
+        <div class="social-header"><div class="social-title display">Instagram</div><a href="https://instagram.com/drape.fashion" target="_blank" class="admin-btn" style="text-decoration:none;display:inline-block">Open Profile ↗</a></div>
+        <div class="platform-card">
+          <div class="platform-header">
+            <div class="platform-icon" style="background:linear-gradient(135deg,#f09433,#e6683c,#dc2743,#cc2366,#bc1888)">📸</div>
+            <div class="platform-info"><div class="platform-name">DRAPE Fashion</div><div class="platform-handle">@drape.fashion</div></div>
+            <div class="platform-stats">
+              <div class="plat-stat"><div class="plat-stat-val">12.4K</div><div class="plat-stat-key">Followers</div></div>
+              <div class="plat-stat"><div class="plat-stat-val">342</div><div class="plat-stat-key">Posts</div></div>
+              <div class="plat-stat"><div class="plat-stat-val">5.2%</div><div class="plat-stat-key">Eng. Rate</div></div>
+            </div>
+          </div>
+        </div>
+        <div class="post-composer" style="margin-top:16px">
+          <div class="post-composer-title">Create Instagram Post</div>
+          <textarea class="post-textarea" id="ig_caption" placeholder="Write your caption..." oninput="updateCharCount('ig_caption','ig_count',2200)"></textarea>
+          <div class="post-actions">
+            <button class="post-btn ghost" onclick="aiCaption('instagram')">✨ AI Caption</button>
+            <span class="post-char-count" id="ig_count">0 / 2200</span>
+            <button class="post-btn primary" onclick="schedulePost('instagram')">Post Now</button>
+          </div>
+        </div>
+        <div class="posts-grid" id="igPostsGrid"></div>
+      </div>
+      <!-- Other platforms omitted for brevity but functional via JS -->
+      <div class="social-page" id="social-facebook">
+        <div class="social-header"><div class="social-title display">Facebook</div></div>
+        <div class="post-composer" style="margin-top:16px">
+          <div class="post-composer-title">Create Facebook Post</div>
+          <textarea class="post-textarea" id="fb_caption" placeholder="Write your post..." oninput="updateCharCount('fb_caption','fb_count',63206)"></textarea>
+          <div class="post-actions">
+            <button class="post-btn ghost" onclick="aiCaption('facebook')">✨ AI Caption</button>
+            <span class="post-char-count" id="fb_count">0 / 63206</span>
+            <button class="post-btn primary" onclick="schedulePost('facebook')">Post Now</button>
+          </div>
+        </div>
+        <div class="posts-grid" id="fbPostsGrid"></div>
+      </div>
+      <div class="social-page" id="social-tiktok">
+        <div class="social-header"><div class="social-title display">TikTok</div></div>
+        <div class="post-composer" style="margin-top:16px">
+          <div class="post-composer-title">Create TikTok Script</div>
+          <textarea class="post-textarea" id="tt_caption" placeholder="Write your TikTok script..." oninput="updateCharCount('tt_caption','tt_count',2200)"></textarea>
+          <div class="post-actions">
+            <button class="post-btn ghost" onclick="aiCaption('tiktok')">✨ AI Script</button>
+            <span class="post-char-count" id="tt_count">0 / 2200</span>
+            <button class="post-btn primary" onclick="schedulePost('tiktok')">Upload</button>
+          </div>
+        </div>
+        <div class="posts-grid" id="ttPostsGrid"></div>
+      </div>
+      <div class="social-page" id="social-linkedin">
+        <div class="social-header"><div class="social-title display">LinkedIn</div></div>
+        <div class="post-composer" style="margin-top:16px">
+          <div class="post-composer-title">Create LinkedIn Post</div>
+          <textarea class="post-textarea" id="li_caption" placeholder="Share updates..." oninput="updateCharCount('li_caption','li_count',3000)"></textarea>
+          <div class="post-actions">
+            <button class="post-btn ghost" onclick="aiCaption('linkedin')">✨ AI Post</button>
+            <span class="post-char-count" id="li_count">0 / 3000</span>
+            <button class="post-btn primary" onclick="schedulePost('linkedin')">Publish</button>
+          </div>
+        </div>
+        <div class="posts-grid" id="liPostsGrid"></div>
+      </div>
+      <div class="social-page" id="social-scheduler">
+        <div class="social-header"><div class="social-title display">Post Scheduler</div></div>
+        <div class="post-composer">
+          <div class="post-composer-title">New Scheduled Post</div>
+          <div class="form-row" style="margin-bottom:12px">
+            <div><label class="form-label">Platform</label><select class="form-select" id="sch_platform"><option>Instagram</option><option>Facebook</option><option>TikTok</option><option>LinkedIn</option><option>All Platforms</option></select></div>
+            <div><label class="form-label">Schedule Date & Time</label><input class="form-input" id="sch_datetime" type="datetime-local"></div>
+          </div>
+          <textarea class="post-textarea" id="sch_content" placeholder="Write your post content..." oninput="updateCharCount('sch_content','sch_count',2200)" style="margin-bottom:10px"></textarea>
+          <div class="post-actions">
+            <button class="post-btn ghost" onclick="aiCaption('scheduler')">✨ AI Generate</button>
+            <span class="post-char-count" id="sch_count">0 / 2200</span>
+            <button class="post-btn primary" onclick="scheduleSave()">Schedule Post</button>
+          </div>
+        </div>
+        <div class="table-wrapper"><table class="admin-table"><thead><tr><th>Platform</th><th>Content</th><th>Scheduled</th><th>Status</th><th></th></tr></thead><tbody id="scheduleBody"></tbody></table></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="page" id="page-whatsapp">
+  <div class="wa-layout">
+    <div class="wa-sidebar">
+      <div class="wa-sidebar-header">
+        <span style="font-size:24px">💬</span>
+        <div><div class="wa-sidebar-title">DRAPE Business</div><div style="font-size:10px;opacity:.8">WhatsApp Business</div></div>
+      </div>
+      <div class="wa-search"><input placeholder="Search conversations..." oninput="filterWaChats(this.value)" id="waSearch"></div>
+      <div class="wa-chat-list" id="waChatList"></div>
+    </div>
+    <div id="waMain">
+      <div class="wa-empty">
+        <div class="wa-empty-icon">💬</div>
+        <div style="font-family:'Cormorant Garamond',serif;font-size:20px;font-weight:300">Select a conversation</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="admin-modal-overlay" id="addProdModal">
+  <div class="admin-modal">
+    <div class="admin-modal-title" id="addProdTitle">Add Product</div>
+    <div class="form-group"><label class="form-label">Name</label><input class="form-input" id="np_name" placeholder="Silk Wrap Dress"></div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Category</label><select class="form-select" id="np_cat"><option>Dresses</option><option>Tops</option><option>Bottoms</option><option>Outerwear</option><option>Accessories</option></select></div>
+      <div class="form-group"><label class="form-label">Vendor</label><select class="form-select" id="np_vendor"><option>LOOM &amp; GRACE</option><option>THREAD REPUBLIC</option><option>NAKSHI STUDIO</option><option>ZEPHYR CUTS</option><option>ADORN CO.</option></select></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Price (৳)</label><input class="form-input" id="np_price" type="number"></div>
+      <div class="form-group"><label class="form-label">Original Price (sale)</label><input class="form-input" id="np_orig" type="number" placeholder="Leave blank if no sale"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Stock</label><input class="form-input" id="np_stock" type="number"></div>
+      <div class="form-group"><label class="form-label">Emoji</label><input class="form-input" id="np_emoji" placeholder="👗"></div>
+    </div>
+    <div class="form-group"><label class="form-label">Description</label><textarea class="form-input" id="np_desc" rows="2"></textarea></div>
+    <div class="form-group"><label class="form-label">Sizes (comma separated)</label><input class="form-input" id="np_sizes" placeholder="XS,S,M,L,XL"></div>
+    <div class="form-group"><label class="form-label">Colors (Name:Hex, comma separated)</label><input class="form-input" id="np_colors" placeholder="Ivory:#FFFFF0,Midnight:#191970"></div>
+    <div class="form-group"><label class="form-label">Sub-variants (Name:Price, comma separated)</label><input class="form-input" id="np_subs" placeholder="Regular:2500,Longline:2800"></div>
+    <div class="form-group"><label class="form-label">Material</label><input class="form-input" id="np_material"></div>
+    <div class="form-group"><label class="form-label">Badge</label><input class="form-input" id="np_badge" placeholder="New Arrival"></div>
+    <div style="display:flex;gap:10px;margin-top:12px">
+      <button class="admin-btn" onclick="saveProduct()">Save</button>
+      <button class="btn-ghost" onclick="closeAddProd()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<script src="admin.js"></script>
+</body>
+</html>

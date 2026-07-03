@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DRAPE — Fashion OS v4</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="demo-banner">🚧 This is a demo / MVP. Not for production use. For admin access, open <a href="admin.html">admin.html</a> · <a href="README.md">Read security notes</a></div>
+<div class="tamper-warning" id="tamperWarning">⚠️ Price data appears to have been tampered with. Restored to safe defaults.</div>
+<div id="toast"></div>
+
+<nav>
+  <div class="nav-logo" onclick="showPage('home')">DR<span>A</span>PE</div>
+  <div class="nav-links">
+    <button class="nav-link active" onclick="showPage('home')">Home</button>
+    <button class="nav-link" onclick="showPage('shop')">Shop</button>
+    <button class="nav-link" onclick="showPage('catalog')">Catalog</button>
+    <button class="nav-link" onclick="showPage('brands')">Brands</button>
+    <button class="nav-link" onclick="showPage('about')">Story</button>
+    <button class="nav-link" onclick="showPage('track')">Track</button>
+    <button class="nav-link" onclick="showPage('social')">📱 Social</button>
+    <button class="nav-link" onclick="showPage('whatsapp')">💬 WhatsApp</button>
+  </div>
+  <div style="display:flex;align-items:center;gap:10px;">
+    <button class="theme-toggle" onclick="toggleTheme()" title="Toggle dark mode">🌙</button>
+    <button class="cart-btn" onclick="toggleCart()">Bag <span class="cart-count" id="cartCount">0</span></button>
+    <button class="cart-btn" onclick="showCustomerAuth()" id="accountBtn" title="Account">👤</button>
+    <button class="mobile-menu-btn" onclick="openMobileNav()">☰</button>
+  </div>
+</nav>
+
+<div class="mobile-nav-overlay" id="mobileNavOverlay" onclick="closeMobileNav(event)">
+  <div class="mobile-nav-drawer" onclick="event.stopPropagation()">
+    <button class="mobile-nav-close" onclick="closeMobileNav()">×</button>
+    <button class="mobile-nav-btn" onclick="showPage('home');closeMobileNav()">Home</button>
+    <button class="mobile-nav-btn" onclick="showPage('shop');closeMobileNav()">Shop</button>
+    <button class="mobile-nav-btn" onclick="showPage('catalog');closeMobileNav()">Catalog</button>
+    <button class="mobile-nav-btn" onclick="showPage('brands');closeMobileNav()">Brands</button>
+    <button class="mobile-nav-btn" onclick="showPage('about');closeMobileNav()">Story</button>
+    <button class="mobile-nav-btn" onclick="showPage('track');closeMobileNav()">Track Order</button>
+    <button class="mobile-nav-btn" onclick="showPage('social');closeMobileNav()">📱 Social</button>
+    <button class="mobile-nav-btn" onclick="showPage('whatsapp');closeMobileNav()">💬 WhatsApp</button>
+    <div style="height:1px;background:var(--dust);margin:12px 0"></div>
+    <button class="mobile-nav-btn" onclick="toggleCart();closeMobileNav()">🛍 Your Bag</button>
+    <button class="mobile-nav-btn" onclick="toggleTheme();closeMobileNav()">🌙 Toggle Dark Mode</button>
+    <button class="mobile-nav-btn" onclick="showCustomerAuth();closeMobileNav()" id="mobileAccountBtn">👤 Account</button>
+  </div>
+</div>
+
+<div class="cart-drawer" id="cartDrawer">
+  <div class="cart-header"><span class="cart-title">Your Bag</span><button class="cart-close" onclick="toggleCart()">×</button></div>
+  <div class="cart-items" id="cartItems"></div>
+  <div class="cart-footer" id="cartFooter" style="display:none">
+    <div class="cart-total-row"><span>Subtotal</span><span id="cartSubtotal">৳0</span></div>
+    <div class="cart-total-row"><span>Shipping</span><span id="cartShipping">৳0</span></div>
+    <div class="cart-total-row grand"><span>Total</span><span id="cartTotal">৳0</span></div>
+    <button class="checkout-btn" onclick="goCheckout()">Checkout →</button>
+  </div>
+</div>
+
+<div class="modal-overlay" id="productModal" onclick="closeMBg(event)">
+  <div class="modal" id="modalContent">
+    <button class="modal-close" onclick="closeMDirect()">×</button>
+    <div class="modal-img-area">
+      <div class="modal-img" id="modalImg"></div>
+      <div class="modal-thumbs" id="modalThumbs"></div>
+    </div>
+    <div class="modal-body">
+      <div class="modal-cat" id="modalCat"></div>
+      <div class="modal-vendor" id="modalVendor"></div>
+      <div class="modal-name" id="modalName"></div>
+      <div class="modal-price-row">
+        <div class="modal-price" id="modalPrice"></div>
+        <div class="modal-orig" id="modalOrig" style="display:none"></div>
+        <div class="modal-disc" id="modalDisc" style="display:none"></div>
+      </div>
+      <div class="modal-desc" id="modalDesc"></div>
+      <div>
+        <div class="modal-label">Color: <span id="colorLabel" style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--slate)"></span></div>
+        <div class="color-swatches" id="colorSwatches"></div>
+      </div>
+      <div>
+        <div class="modal-label">Size: <span id="sizeLabel" style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--slate)"></span></div>
+        <div class="size-options" id="sizeOptions"></div>
+      </div>
+      <div>
+        <div class="modal-label">Quantity</div>
+        <div class="qty-control">
+          <button class="qty-btn" onclick="changeQty(-1)">−</button>
+          <span class="qty-num" id="qtyNum">1</span>
+          <button class="qty-btn" onclick="changeQty(1)">+</button>
+        </div>
+      </div>
+      <table class="spec-table" id="specTable"></table>
+      <div style="font-size:10px;color:var(--slate);font-family:'DM Mono',monospace" id="modalStock"></div>
+      <button class="btn-primary" onclick="addToCartModal()" style="width:100%">Add to Bag</button>
+    </div>
+  </div>
+</div>
+
+<!-- HOME -->
+<div class="page active" id="page-home">
+  <div class="hero">
+    <div class="hero-text">
+      <div class="hero-eyebrow">Dhaka · SS 2026 · 5 Brand Partners</div>
+      <h1 class="hero-headline">Cloth that<br>tells your<br><em>story.</em></h1>
+      <p class="hero-sub">Curated from five artisan brands. Every piece made to outlast the season — built on data and craft.</p>
+      <div class="hero-cta">
+        <button class="btn-primary" onclick="showPage('shop')">Shop Collection</button>
+        <button class="btn-ghost" onclick="showPage('brands')">Our Brands</button>
+      </div>
+    </div>
+    <div class="hero-visual">
+      <div class="hero-fabric"></div>
+      <div class="hero-fabric-lines"></div>
+      <div class="hero-tag">SS/26</div>
+      <div class="hero-stat">
+        <div class="hero-stat-num" id="heroCount">0</div>
+        <div class="hero-stat-label">Pieces in Collection</div>
+      </div>
+    </div>
+  </div>
+  <div class="section">
+    <div class="section-header"><h2 class="section-title display">New Arrivals</h2><button class="nav-link" onclick="showPage('shop')">View all →</button></div>
+    <div class="product-grid" id="featuredGrid"></div>
+  </div>
+</div>
+
+<!-- SHOP -->
+<div class="page" id="page-shop">
+  <div class="section">
+    <div class="section-header"><h2 class="section-title display">The Collection</h2><span class="section-sub mono" id="productCount"></span></div>
+    <div class="filter-bar">
+      <button class="filter-btn active" onclick="filterP('All',this)">All</button>
+      <button class="filter-btn" onclick="filterP('Dresses',this)">Dresses</button>
+      <button class="filter-btn" onclick="filterP('Tops',this)">Tops</button>
+      <button class="filter-btn" onclick="filterP('Bottoms',this)">Bottoms</button>
+      <button class="filter-btn" onclick="filterP('Outerwear',this)">Outerwear</button>
+      <button class="filter-btn" onclick="filterP('Accessories',this)">Accessories</button>
+      <button class="filter-btn" onclick="filterP('__sale__',this)" style="color:#E74C3C;border-color:#E74C3C">Sale</button>
+    </div>
+    <div class="product-grid" id="shopGrid"></div>
+  </div>
+</div>
+
+<!-- CATALOG -->
+<div class="page" id="page-catalog">
+  <div class="catalog-layout">
+    <div class="cat-sidebar">
+      <div class="cat-sidebar-title">Categories</div>
+      <button class="cat-nav-btn active" onclick="showCat('all',this)">All Products</button>
+      <button class="cat-nav-btn" onclick="showCat('dresses',this)">👗 Dresses</button>
+      <button class="cat-nav-btn" onclick="showCat('tops',this)">👚 Tops</button>
+      <button class="cat-nav-btn" onclick="showCat('bottoms',this)">👖 Bottoms</button>
+      <button class="cat-nav-btn" onclick="showCat('outerwear',this)">🧥 Outerwear</button>
+      <button class="cat-nav-btn" onclick="showCat('accessories',this)">👜 Accessories</button>
+      <div style="height:1px;background:var(--dust);margin:14px 0"></div>
+      <div class="cat-sidebar-title">By Brand</div>
+      <button class="cat-nav-btn" onclick="showCat('b_loom',this)">LOOM &amp; GRACE</button>
+      <button class="cat-nav-btn" onclick="showCat('b_thread',this)">THREAD REPUBLIC</button>
+      <button class="cat-nav-btn" onclick="showCat('b_nakshi',this)">NAKSHI STUDIO</button>
+      <button class="cat-nav-btn" onclick="showCat('b_zephyr',this)">ZEPHYR CUTS</button>
+      <button class="cat-nav-btn" onclick="showCat('b_adorn',this)">ADORN CO.</button>
+    </div>
+    <div class="cat-main" id="catMain"></div>
+  </div>
+</div>
+
+<!-- BRANDS -->
+<div class="page" id="page-brands">
+  <div class="brands-hero">
+    <h1 class="display">Five Brands.<br>One Vision.</h1>
+    <p>DRAPE partners with five specialist artisan brands — each a master of their category. Sourced directly, quality-checked, fulfilled under one roof.</p>
+  </div>
+  <div class="brand-tabs">
+    <button class="brand-tab active" onclick="showBrand('loom',this)">LOOM &amp; GRACE</button>
+    <button class="brand-tab" onclick="showBrand('thread',this)">THREAD REPUBLIC</button>
+    <button class="brand-tab" onclick="showBrand('nakshi',this)">NAKSHI STUDIO</button>
+    <button class="brand-tab" onclick="showBrand('zephyr',this)">ZEPHYR CUTS</button>
+    <button class="brand-tab" onclick="showBrand('adorn',this)">ADORN CO.</button>
+  </div>
+  <div class="brand-panel active" id="brand-loom">
+    <div class="brand-header">
+      <div class="brand-logo-area"><div class="brand-logo-icon">🌿</div><div class="brand-logo-name">LOOM &amp; GRACE</div><div class="brand-logo-tag">Est. 2018 · Dhaka</div></div>
+      <div class="brand-info">
+        <div class="brand-cat-tag">Dresses &amp; Occasion Wear</div>
+        <div class="brand-info-name display">Loom &amp; Grace</div>
+        <div class="brand-info-desc">Specializes in fluid occasion wear woven from heritage Dhaka muslin and imported Japanese silk. Founder Tahira Chowdhury began in her grandmother's weaving room in Old Dhaka.</div>
+        <div class="brand-meta-grid">
+          <div class="brand-meta-cell"><div class="brand-meta-val">34</div><div class="brand-meta-key">SKUs</div></div>
+          <div class="brand-meta-cell"><div class="brand-meta-val">৳2.4K</div><div class="brand-meta-key">Avg Price</div></div>
+          <div class="brand-meta-cell"><div class="brand-meta-val">98%</div><div class="brand-meta-key">Organic</div></div>
+        </div>
+        <div class="vendor-actions">
+          <button class="admin-btn" onclick="showPage('catalog');setTimeout(()=>showCat('b_loom',null),100)">View Products</button>
+        </div>
+      </div>
+    </div>
+    <div class="brand-about"><h2 class="display">About the Brand</h2><p>Every Loom &amp; Grace garment starts life in a handloom workshop in Old Dhaka. The weaving process for a single dress takes 3–6 days. Their dye house uses only plant-based mordants. The brand has been carbon-neutral since 2022 and ships all Bangladesh orders in compostable packaging.</p></div>
+  </div>
+  <div class="brand-panel" id="brand-thread">
+    <div class="brand-header">
+      <div class="brand-logo-area"><div class="brand-logo-icon">✂️</div><div class="brand-logo-name">THREAD REPUBLIC</div><div class="brand-logo-tag">Est. 2020 · Chittagong</div></div>
+      <div class="brand-info">
+        <div class="brand-cat-tag">Tops &amp; Knitwear</div>
+        <div class="brand-info-name display">Thread Republic</div>
+        <div class="brand-info-desc">A Chittagong-based knitwear studio using recycled cotton spun from post-consumer textile waste collected from Dhaka's export factories. 140 women employed, LEED Silver factory.</div>
+        <div class="brand-meta-grid">
+          <div class="brand-meta-cell"><div class="brand-meta-val">51</div><div class="brand-meta-key">SKUs</div></div>
+          <div class="brand-meta-cell"><div class="brand-meta-val">৳1.8K</div><div class="brand-meta-key">Avg Price</div></div>
+          <div class="brand-meta-cell"><div class="brand-meta-val">67%</div><div class="brand-meta-key">Recycled</div></div>
+        </div>
+        <div class="vendor-actions">
+          <button class="admin-btn" onclick="showPage('catalog');setTimeout(()=>showCat('b_thread',null),100)">View Products</button>
+        </div>
+      </div>
+    </div>
+    <div class="brand-about"><h2 class="display">About the Brand</h2><p>Thread Republic collects defective or surplus fabric rolls from RMG factories in Chittagong EPZ and respins it into high-quality knitwear yarn. Each top comes with a QR code linking to the exact batch of recycled input material used.</p></div>
+  </div>
+  <div class="brand-panel" id="brand-nakshi">
+    <div class="brand-header">
+      <div class="brand-logo-area"><div class="brand-logo-icon">🎨</div><div class="brand-logo-name">NAKSHI STUDIO</div><div class="brand-logo-tag">Est. 2016 · Rajshahi</div></div>
+      <div class="brand-info">
+        <div class="brand-cat-tag">Ethnic &amp; Embroidered Wear</div>
+        <div class="brand-info-name display">Nakshi Studio</div>
+        <div class="brand-info-desc">Revives traditional nakshikantha hand-embroidery from rural Rajshahi. Modern silhouettes carrying ancient motifs. 220+ artisans, fair-trade model guaranteeing 60% of retail price to makers.</div>
+        <div class="brand-meta-grid">
+          <div class="brand-meta-cell"><div class="brand-meta-val">28</div><div class="brand-meta-key">SKUs</div></div>
+          <div class="brand-meta-cell"><div class="brand-meta-val">৳3.1K</div><div class="brand-meta-key">Avg Price</div></div>
+          <div class="brand-meta-cell"><div class="brand-meta-val">220+</div><div class="brand-meta-key">Artisans</div></div>
+        </div>
+        <div class="vendor-actions">
+          <button class="admin-btn" onclick="showPage('catalog');setTimeout(()=>showCat('b_nakshi',null),100)">View Products</button>
+        </div>
+      </div>
+    </div>
+    <div class="brand-about"><h2 class="display">About the Brand</h2><p>Nakshi Studio's fair-trade model guarantees artisans 60% of the retail price — triple the industry average. Each piece takes 8–20 days to complete and is unique. The studio trains 40 new artisans annually through a 6-month residency program.</p></div>
+  </div>
+  <div class="brand-panel" id="brand-zephyr">
+    <div class="brand-header">
+      <div class="brand-logo-area"><div class="brand-logo-icon">🔪</div><div class="brand-logo-name">ZEPHYR CUTS</div><div class="brand-logo-tag">Est. 2022 · Dhaka</div></div>
+      <div class="brand-info">
+        <div class="brand-cat-tag">Tailored Bottoms &amp; Outerwear</div>
+        <div class="brand-info-name display">Zephyr Cuts</div>
+        <div class="brand-info-desc">Precision tailoring from Gulshan. Structured trousers, skirts, and outerwear. Zero stretch fabrics, full canvas construction, hand-stitched lapels. 14 QC checkpoints per garment.</div>
+        <div class="brand-meta-grid">
+          <div class="brand-meta-cell"><div class="brand-meta-val">22</div><div class="brand-meta-key">SKUs</div></div>
+          <div class="brand-meta-cell"><div class="brand-meta-val">৳4.8K</div><div class="brand-meta-key">Avg Price</div></div>
+          <div class="brand-meta-cell"><div class="brand-meta-val">14</div><div class="brand-meta-key">QC Steps</div></div>
+        </div>
+        <div class="vendor-actions">
+          <button class="admin-btn" onclick="showPage('catalog');setTimeout(()=>showCat('b_zephyr',null),100)">View Products</button>
+        </div>
+      </div>
+    </div>
+    <div class="brand-about"><h2 class="display">About the Brand</h2><p>Every Zephyr Cuts trouser goes through 14 quality checkpoints across three workshops. Founded by two former BGMEA production directors. Italian canvas interlinings, Japanese fusible tape, and German thread in every structured garment.</p></div>
+  </div>
+  <div class="brand-panel" id="brand-adorn">
+    <div class="brand-header">
+      <div class="brand-logo-area"><div class="brand-logo-icon">💎</div><div class="brand-logo-name">ADORN CO.</div><div class="brand-logo-tag">Est. 2019 · Sylhet</div></div>
+      <div class="brand-info">
+        <div class="brand-cat-tag">Accessories &amp; Jewellery</div>
+        <div class="brand-info-name display">Adorn Co.</div>
+        <div class="brand-info-desc">Structured bags, handcrafted jewellery, and leather goods from a small Sylhet atelier. Full-grain leather from certified Rajshahi tanneries. 5-year repair guarantee on every bag.</div>
+        <div class="brand-meta-grid">
+          <div class="brand-meta-cell"><div class="brand-meta-val">45</div><div class="brand-meta-key">SKUs</div></div>
+          <div class="brand-meta-cell"><div class="brand-meta-val">৳1.3K</div><div class="brand-meta-key">Avg Price</div></div>
+          <div class="brand-meta-cell"><div class="brand-meta-val">100%</div><div class="brand-meta-key">Handmade</div></div>
+        </div>
+        <div class="vendor-actions">
+          <button class="admin-btn" onclick="showPage('catalog');setTimeout(()=>showCat('b_adorn',null),100)">View Products</button>
+        </div>
+      </div>
+    </div>
+    <div class="brand-about"><h2 class="display">About the Brand</h2><p>Adorn Co. grew out of a leather workshop in Sylhet that had been making export goods for European brands for 15 years. Their bags come with a 5-year repair guarantee. The jewellery line uses recycled brass and conflict-free semi-precious stones.</p></div>
+  </div>
+</div>
+
+<!-- CHECKOUT -->
+<div class="page" id="page-checkout">
+  <div class="checkout-layout">
+    <div class="checkout-form-area">
+      <h2 class="co-sec-title display">Checkout</h2>
+      <div style="margin-bottom:24px">
+        <h3 style="font-size:10px;letter-spacing:.1em;text-transform:uppercase;margin-bottom:16px;color:var(--slate)">Contact</h3>
+        <div class="form-row">
+          <div class="form-group"><label class="form-label">First Name</label><input class="form-input" id="co_fname" placeholder="Nusrat"></div>
+          <div class="form-group"><label class="form-label">Last Name</label><input class="form-input" id="co_lname" placeholder="Jahan"></div>
+        </div>
+        <div class="form-group"><label class="form-label">Email</label><input class="form-input" id="co_email" type="email" placeholder="you@example.com"></div>
+        <div class="form-group"><label class="form-label">Phone</label><input class="form-input" id="co_phone" placeholder="+880 17XX XXXXXX"></div>
+      </div>
+      <div style="margin-bottom:24px">
+        <h3 style="font-size:10px;letter-spacing:.1em;text-transform:uppercase;margin-bottom:16px;color:var(--slate)">Shipping</h3>
+        <div class="form-group"><label class="form-label">Address</label><input class="form-input" id="co_addr" placeholder="House, Road, Block"></div>
+        <div class="form-row">
+          <div class="form-group"><label class="form-label">City</label><select class="form-select" id="co_city"><option>Dhaka</option><option>Chittagong</option><option>Sylhet</option><option>Rajshahi</option><option>Khulna</option></select></div>
+          <div class="form-group"><label class="form-label">Postcode</label><input class="form-input" id="co_zip" placeholder="1215"></div>
+        </div>
+      </div>
+      <div>
+        <h3 style="font-size:10px;letter-spacing:.1em;text-transform:uppercase;margin-bottom:16px;color:var(--slate)">Payment</h3>
+        <div class="pay-methods">
+          <div class="pay-method selected" onclick="selectPay('card',this)"><span class="pay-method-icon">💳</span>Card</div>
+          <div class="pay-method" onclick="selectPay('bkash',this)"><span class="pay-method-icon">📱</span>bKash</div>
+          <div class="pay-method" onclick="selectPay('nagad',this)"><span class="pay-method-icon">🏦</span>Nagad</div>
+          <div class="pay-method" onclick="selectPay('cod',this)"><span class="pay-method-icon">🚪</span>COD</div>
+        </div>
+        <div class="pf show" id="pf_card">
+          <div class="form-group"><label class="form-label">Card Number</label><input class="form-input" id="co_card" placeholder="4242 4242 4242 4242" maxlength="19" oninput="fmtCard(this)"></div>
+          <div class="form-row">
+            <div class="form-group"><label class="form-label">Expiry</label><input class="form-input" id="co_exp" placeholder="MM/YY" maxlength="5" oninput="fmtExp(this)"></div>
+            <div class="form-group"><label class="form-label">CVV</label><input class="form-input" id="co_cvv" placeholder="123" maxlength="3" type="password"></div>
+          </div>
+          <div style="font-size:10px;color:var(--slate)">🔒 Demo: 4242 4242 4242 4242 / 12/28 / 123</div>
+        </div>
+        <div class="pf" id="pf_bkash"><div class="bkash-box"><label class="form-label" style="color:#E2136E">bKash Number</label><input class="form-input" id="co_bkash" placeholder="+880 1XXXXXXXXX"><div style="font-size:11px;color:var(--slate);margin-top:8px">OTP will be sent to confirm.</div></div></div>
+        <div class="pf" id="pf_nagad"><div class="nagad-box"><label class="form-label" style="color:#F7941D">Nagad Number</label><input class="form-input" id="co_nagad" placeholder="+880 1XXXXXXXXX"><div style="font-size:11px;color:var(--slate);margin-top:8px">PIN confirmation via SMS.</div></div></div>
+      </div>
+      <button class="place-btn" onclick="openPayGateway()" id="placeBtn">Secure Checkout →  🔒</button>
+    </div>
+    <div class="checkout-summary-area">
+      <h3 style="font-family:'Cormorant Garamond',serif;font-size:19px;font-weight:300;margin-bottom:22px">Order Summary</h3>
+      <div id="coSummaryItems"></div>
+      <div style="border-top:1px solid var(--dust);padding-top:13px;margin-top:13px">
+        <div class="cart-total-row"><span style="font-size:11px">Subtotal</span><span class="mono" id="co_sub">৳0</span></div>
+        <div class="cart-total-row"><span style="font-size:11px">Shipping</span><span class="mono" id="co_ship">৳0</span></div>
+        <div class="cart-total-row grand"><span>Total</span><span class="mono" id="co_total">৳0</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- CONFIRMED -->
+<div class="page" id="page-confirmed">
+  <div class="order-confirm">
+    <div class="confirm-icon">✅</div>
+    <h1 class="confirm-title display">Order Placed.</h1>
+    <p class="confirm-sub">Thank you for shopping with DRAPE. Your order is being prepared and you'll receive confirmation shortly.</p>
+    <div class="order-id-box"><div class="order-id-label">Order ID</div><div class="order-id-val" id="confirmedOID">#DRAPE-0000</div></div>
+    <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
+      <button class="btn-primary" onclick="showPage('shop')">Continue Shopping</button>
+      <button class="btn-ghost" onclick="showPage('track')">Track Order</button>
+    </div>
+  </div>
+</div>
+
+<!-- ABOUT -->
+<div class="page" id="page-about">
+  <div class="brand-hero-about"><h1 class="display">Built in Dhaka,<br>worn everywhere.</h1><p>DRAPE was founded with one belief: South Asian fashion deserves a global standard of craft.</p></div>
+  <div class="brand-pillars">
+    <div class="brand-pillar"><div class="pillar-icon">🧵</div><div class="pillar-title display">Craft First</div><p class="pillar-desc">Every garment passes through 14 quality checkpoints. We work with artisans who've spent decades mastering their technique.</p></div>
+    <div class="brand-pillar"><div class="pillar-icon">🌿</div><div class="pillar-title display">Responsible Materials</div><p class="pillar-desc">70% of our fabrics are GOTS-certified organic or recycled. On track for 100% by 2027.</p></div>
+    <div class="brand-pillar"><div class="pillar-icon">🤝</div><div class="pillar-title display">5 Brand Partners</div><p class="pillar-desc">Five specialist artisan brands under one roof — each a category expert, all held to the same ethical standard.</p></div>
+  </div>
+</div>
+
+<!-- SOCIAL -->
+<div class="page" id="page-social">
+  <div class="social-layout">
+    <div class="social-sidebar">
+      <div class="social-sidebar-title">Channels</div>
+      <button class="social-nav-btn active" onclick="showSocialPage('overview',this)">📊 Overview</button>
+      <button class="social-nav-btn" onclick="showSocialPage('instagram',this)">📸 Instagram</button>
+      <button class="social-nav-btn" onclick="showSocialPage('facebook',this)">👥 Facebook</button>
+      <button class="social-nav-btn" onclick="showSocialPage('tiktok',this)">🎵 TikTok</button>
+      <button class="social-nav-btn" onclick="showSocialPage('linkedin',this)">💼 LinkedIn</button>
+    </div>
+    <div class="social-content">
+      <div class="social-page active" id="social-overview">
+        <div class="social-header"><div class="social-title display">Social Media Hub</div></div>
+        <div class="social-analytics">
+          <div class="stat-card"><div class="stat-label">Total Followers</div><div class="stat-value display" id="soc_followers">0</div><div class="stat-delta up">+234 this week</div></div>
+          <div class="stat-card"><div class="stat-label">Total Reach</div><div class="stat-value display" id="soc_reach">0</div><div class="stat-delta up">+12.4%</div></div>
+          <div class="stat-card"><div class="stat-label">Engagement Rate</div><div class="stat-value display">4.8%</div><div class="stat-delta up">+0.3%</div></div>
+          <div class="stat-card"><div class="stat-label">Link Clicks</div><div class="stat-value display">1.2K</div><div class="stat-delta up">+18%</div></div>
+        </div>
+        <div class="analytics-bar-chart">
+          <div class="analytics-bar-chart-title">Followers by Platform</div>
+          <div class="bar-row"><div class="bar-label">Instagram</div><div class="bar-track"><div class="bar-fill" style="width:78%"></div></div><div class="bar-val">12.4K</div></div>
+          <div class="bar-row"><div class="bar-label">Facebook</div><div class="bar-track"><div class="bar-fill" style="width:52%"></div></div><div class="bar-val">8.1K</div></div>
+          <div class="bar-row"><div class="bar-label">TikTok</div><div class="bar-track"><div class="bar-fill" style="width:38%"></div></div><div class="bar-val">6.2K</div></div>
+          <div class="bar-row"><div class="bar-label">LinkedIn</div><div class="bar-track"><div class="bar-fill" style="width:14%"></div></div><div class="bar-val">2.1K</div></div>
+        </div>
+        <div id="platformCards"></div>
+      </div>
+      <div class="social-page" id="social-instagram">
+        <div class="social-header"><div class="social-title display">Instagram</div></div>
+        <div class="posts-grid" id="igPostsGrid"></div>
+      </div>
+      <div class="social-page" id="social-facebook">
+        <div class="social-header"><div class="social-title display">Facebook</div></div>
+        <div class="posts-grid" id="fbPostsGrid"></div>
+      </div>
+      <div class="social-page" id="social-tiktok">
+        <div class="social-header"><div class="social-title display">TikTok</div></div>
+        <div class="posts-grid" id="ttPostsGrid"></div>
+      </div>
+      <div class="social-page" id="social-linkedin">
+        <div class="social-header"><div class="social-title display">LinkedIn</div></div>
+        <div class="posts-grid" id="liPostsGrid"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- WHATSAPP -->
+<div class="page" id="page-whatsapp">
+  <div class="wa-layout">
+    <div class="wa-sidebar">
+      <div class="wa-sidebar-header">
+        <span style="font-size:24px">💬</span>
+        <div><div class="wa-sidebar-title">DRAPE Business</div><div style="font-size:10px;opacity:.8">WhatsApp Business</div></div>
+      </div>
+      <div class="wa-search"><input placeholder="Search conversations..." oninput="filterWaChats(this.value)" id="waSearch"></div>
+      <div class="wa-chat-list" id="waChatList"></div>
+    </div>
+    <div id="waMain">
+      <div class="wa-empty">
+        <div class="wa-empty-icon">💬</div>
+        <div style="font-family:'Cormorant Garamond',serif;font-size:20px;font-weight:300">Select a conversation</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ORDER TRACKING -->
+<div class="page" id="page-track">
+  <div class="track-layout">
+    <h1 class="track-title display">Track Your Order</h1>
+    <p class="track-sub">Enter your order ID to see real-time status and delivery timeline.</p>
+    <div class="track-search">
+      <input class="track-input" id="trackInput" placeholder="e.g. DRAPE-1001" onkeydown="if(event.key==='Enter')trackOrder()">
+      <button class="track-btn" onclick="trackOrder()">Track →</button>
+    </div>
+    <div class="track-result" id="trackResult"></div>
+  </div>
+</div>
+
+<!-- PAYMENT GATEWAY MODAL -->
+<div class="pgw-overlay" id="pgwOverlay">
+  <div class="pgw-modal">
+    <div class="pgw-header">
+      <div class="pgw-logo">DR<span>A</span>PE <span style="font-family:'DM Mono',monospace;font-size:11px;color:var(--slate);font-weight:300">PAY</span></div>
+      <div class="pgw-secure">🔒 SSL SECURED</div>
+    </div>
+    <div id="pgwForm">
+      <div class="pgw-body">
+        <div class="pgw-amount">
+          <div class="pgw-amount-label">Amount Due</div>
+          <div class="pgw-amount-value" id="pgwAmount">৳0</div>
+        </div>
+        <div class="pgw-methods">
+          <div class="pgw-method sel" onclick="selPgwMethod('card',this)">
+            <div class="pgw-method-icon">💳</div>
+            <div class="pgw-method-name">Credit / Debit</div>
+            <div class="pgw-method-tag">Visa · MC · Amex</div>
+          </div>
+          <div class="pgw-method" onclick="selPgwMethod('bkash',this)">
+            <div class="pgw-method-icon" style="background:#E2136E;border-radius:8px;width:32px;height:32px;display:flex;align-items:center;justify-content:center;margin:0 auto 4px;font-size:14px;color:white">b</div>
+            <div class="pgw-method-name">bKash</div>
+            <div class="pgw-method-tag">Mobile Banking</div>
+          </div>
+          <div class="pgw-method" onclick="selPgwMethod('nagad',this)">
+            <div class="pgw-method-icon">🏦</div>
+            <div class="pgw-method-name">Nagad</div>
+            <div class="pgw-method-tag">Mobile Banking</div>
+          </div>
+          <div class="pgw-method" onclick="selPgwMethod('cod',this)">
+            <div class="pgw-method-icon">🚚</div>
+            <div class="pgw-method-name">Cash on Delivery</div>
+            <div class="pgw-method-tag">Pay on receipt</div>
+          </div>
+        </div>
+        <div id="pgw_card_fields">
+          <div class="pgw-field-group"><label class="pgw-label">Card Number</label><input class="pgw-input" id="pgw_card" placeholder="1234 5678 9012 3456" maxlength="19" oninput="pgwFmtCard(this)"></div>
+          <div class="pgw-row">
+            <div class="pgw-field-group"><label class="pgw-label">Expiry</label><input class="pgw-input" id="pgw_exp" placeholder="MM/YY" maxlength="5" oninput="pgwFmtExp(this)"></div>
+            <div class="pgw-field-group"><label class="pgw-label">CVV</label><input class="pgw-input" id="pgw_cvv" placeholder="●●●" maxlength="3" type="password"></div>
+          </div>
+          <div class="pgw-field-group"><label class="pgw-label">Card Holder Name</label><input class="pgw-input" id="pgw_name" placeholder="As printed on card"></div>
+        </div>
+        <div id="pgw_bkash_fields" style="display:none">
+          <div class="pgw-field-group"><label class="pgw-label" style="color:#E2136E">bKash Account Number</label><input class="pgw-input" id="pgw_bkash" placeholder="+880 1XXXXXXXXX"></div>
+          <div class="pgw-otp-box" id="pgwOtpBox">
+            <div class="pgw-otp-title">Enter OTP sent to your bKash number</div>
+            <div class="pgw-otp-inputs">
+              <input class="pgw-otp-digit" maxlength="1" oninput="pgwOtpNext(this,1)">
+              <input class="pgw-otp-digit" maxlength="1" oninput="pgwOtpNext(this,2)">
+              <input class="pgw-otp-digit" maxlength="1" oninput="pgwOtpNext(this,3)">
+              <input class="pgw-otp-digit" maxlength="1" oninput="pgwOtpNext(this,4)">
+              <input class="pgw-otp-digit" maxlength="1" oninput="pgwOtpNext(this,5)">
+              <input class="pgw-otp-digit" maxlength="1" oninput="pgwOtpNext(this,6)">
+            </div>
+          </div>
+        </div>
+        <div id="pgw_nagad_fields" style="display:none">
+          <div class="pgw-field-group"><label class="pgw-label" style="color:#F7941D">Nagad Account Number</label><input class="pgw-input" id="pgw_nagad" placeholder="+880 1XXXXXXXXX"></div>
+        </div>
+        <div id="pgw_cod_fields" style="display:none">
+          <div style="background:#fff8f0;border:1px solid var(--dust);padding:14px;font-size:12px;color:var(--slate);line-height:1.7">
+            ✔ Pay in cash when your order arrives.<br>✔ Our delivery agent carries exact change.<br>✔ Please have payment ready at the door.
+          </div>
+        </div>
+        <div class="pgw-ssl"><span class="pgw-ssl-icon">🔐</span><span>Your payment is encrypted with 256-bit SSL. DRAPE never stores card details.</span></div>
+        <button class="pgw-pay-btn" id="pgwPayBtn" onclick="pgwPay()"><span>🔒</span> <span id="pgwPayBtnLabel">Pay Securely</span></button>
+      </div>
+      <div class="pgw-footer">
+        <span class="pgw-badge">🔒 SSL</span>
+        <span class="pgw-badge">✓ PCI DSS</span>
+        <span class="pgw-badge">🛡 3D Secure</span>
+        <span class="pgw-badge">Powered by SSLCommerz</span>
+        <button class="pgw-cancel" onclick="closePgw()">Cancel</button>
+      </div>
+    </div>
+    <div class="pgw-progress" id="pgwProcessing">
+      <div class="pgw-spinner"></div>
+      <div class="pgw-progress-title display">Processing Payment</div>
+      <div class="pgw-progress-sub" id="pgwProgressSub">Connecting to payment gateway...</div>
+      <div class="pgw-steps" id="pgwSteps"></div>
+    </div>
+    <div class="pgw-success" id="pgwSuccess">
+      <div class="pgw-success-icon">✅</div>
+      <div class="pgw-success-title display">Payment Confirmed</div>
+      <div class="pgw-txn" id="pgwTxnId"></div>
+      <div style="font-size:12px;color:var(--slate);text-align:center">Your order has been placed and is being prepared. A confirmation will be sent to your WhatsApp &amp; email.</div>
+      <button class="pgw-pay-btn" style="max-width:200px" onclick="pgwFinish()">View Order</button>
+    </div>
+  </div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
+
+<!-- CUSTOMER AUTH MODAL -->
+<div class="modal-overlay" id="customerAuthModal" onclick="closeCustomerAuth(event)">
+  <div class="modal" style="max-width:420px; padding:32px">
+    <button class="modal-close" onclick="closeCustomerAuthDirect()">×</button>
+    <div id="authLoginForm">
+      <h2 style="font-family:'Cormorant Garamond',serif; font-size:24px; font-weight:300; margin-bottom:8px; text-align:center">Welcome Back</h2>
+      <p style="font-size:12px; color:var(--slate); text-align:center; margin-bottom:24px">Sign in to track orders, save your cart, and more.</p>
+      <div class="form-group" style="margin-bottom:16px">
+        <label class="form-label">Email</label>
+        <input class="form-input" id="custEmail" type="email" placeholder="you@example.com">
+      </div>
+      <div class="form-group" style="margin-bottom:20px">
+        <label class="form-label">Password</label>
+        <input class="form-input" id="custPassword" type="password" placeholder="••••••">
+      </div>
+      <div id="custAuthError" style="font-size:12px; color:#E74C3C; text-align:center; margin-bottom:12px; display:none"></div>
+      <button class="btn-primary" style="width:100%; margin-bottom:12px" onclick="doCustomerLogin()">Sign In</button>
+      <p style="font-size:12px; text-align:center; color:var(--slate)">New here? <a href="#" onclick="showRegisterForm()" style="color:var(--text)">Create an account</a></p>
+    </div>
+    <div id="authRegisterForm" style="display:none">
+      <h2 style="font-family:'Cormorant Garamond',serif; font-size:24px; font-weight:300; margin-bottom:8px; text-align:center">Create Account</h2>
+      <p style="font-size:12px; color:var(--slate); text-align:center; margin-bottom:24px">Join DRAPE for order tracking and exclusive updates.</p>
+      <div class="form-row" style="margin-bottom:16px">
+        <div class="form-group" style="flex:1">
+          <label class="form-label">First Name</label>
+          <input class="form-input" id="regFname" placeholder="Nusrat">
+        </div>
+        <div class="form-group" style="flex:1">
+          <label class="form-label">Last Name</label>
+          <input class="form-input" id="regLname" placeholder="Jahan">
+        </div>
+      </div>
+      <div class="form-group" style="margin-bottom:16px">
+        <label class="form-label">Email</label>
+        <input class="form-input" id="regEmail" type="email" placeholder="you@example.com">
+      </div>
+      <div class="form-group" style="margin-bottom:16px">
+        <label class="form-label">Phone</label>
+        <input class="form-input" id="regPhone" placeholder="+880 17XX XXXXXX">
+      </div>
+      <div class="form-group" style="margin-bottom:20px">
+        <label class="form-label">Password</label>
+        <input class="form-input" id="regPassword" type="password" placeholder="Min 6 characters">
+      </div>
+      <div id="regAuthError" style="font-size:12px; color:#E74C3C; text-align:center; margin-bottom:12px; display:none"></div>
+      <button class="btn-primary" style="width:100%; margin-bottom:12px" onclick="doCustomerRegister()">Create Account</button>
+      <p style="font-size:12px; text-align:center; color:var(--slate)">Already have an account? <a href="#" onclick="showLoginForm()" style="color:var(--text)">Sign in</a></p>
+    </div>
+    <div id="authLoggedIn" style="display:none">
+      <h2 style="font-family:'Cormorant Garamond',serif; font-size:24px; font-weight:300; margin-bottom:8px; text-align:center">My Account</h2>
+      <div id="accountProfile" style="margin-bottom:20px">
+        <div style="font-size:14px; margin-bottom:4px" id="accountName"></div>
+        <div style="font-size:12px; color:var(--slate)" id="accountEmail"></div>
+      </div>
+      <div style="margin-bottom:16px">
+        <button class="btn-primary" style="width:100%; margin-bottom:8px" onclick="showPage('account')">View Orders</button>
+        <button class="btn-ghost" style="width:100%" onclick="doCustomerLogout()">Sign Out</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ACCOUNT PAGE -->
+<div class="page" id="page-account">
+  <div class="track-layout">
+    <h1 class="track-title display">My Account</h1>
+    <div id="accountContent">
+      <div class="track-result open">
+        <div style="font-size:12px; color:var(--slate); text-align:center; padding:40px">
+          <div style="font-size:48px; margin-bottom:16px">👤</div>
+          <div>Sign in to view your orders and profile.</div>
+          <button class="btn-primary" style="margin-top:20px" onclick="showCustomerAuth()">Sign In</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
