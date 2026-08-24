@@ -65,7 +65,7 @@ let scheduledPosts = [];
 let activeWaChat = null;
 let waChats = [];
 
-const API_BASE = '/api';
+const API_BASE = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') ? 'http://localhost:3000/api' : '/api';
 
 async function loadProductsFromAPI() {
   try {
@@ -933,13 +933,15 @@ async function aiCaption(platform) {
   if (!ta) return;
   ta.value = '✨ Generating...'; ta.disabled = true;
   try {
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 1000, messages: [{ role: 'user', content: prompts[platform] || prompts.scheduler }] })
+    // Proxied through our own backend — the real API key (if any) stays server-side.
+    const res = await fetch(`${API_BASE}/ai/caption`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ platform })
     });
     if (!res.ok) throw new Error('API error');
     const data = await res.json();
-    ta.value = data.content?.[0]?.text || 'Could not generate caption.';
+    ta.value = data.caption || 'Could not generate caption.';
   } catch (e) {
     const mockCaptions = {
       instagram: '✨ New drop alert! The SS/26 collection is here — 5 artisan brands, one vision. Crafted in Dhaka, worn everywhere. Which piece speaks to you? 🌿\n\n#DRAPE #DhakaFashion #SustainableStyle #SlowFashion #Bangladesh #ArtisanMade',

@@ -1,46 +1,44 @@
+require('dotenv').config();
 const express = require('express');
-const bcrypt = require('bcryptjs');
 const router = express.Router();
-const { get, run } = require('../database');
-const { generateAccessToken, generateRefreshToken, verifyRefreshToken, authenticateToken } = require('../middleware/auth');
+const bcrypt = require('bcryptjs');
+const { body } = require('express-validator');
+const { run, get, all } = require('../database');
 const { loginLimiter } = require('../middleware/rateLimiter');
 const { logLoginAttempt } = require('../middleware/logger');
+const { handleValidation, stripTags } = require('../middleware/validate');
+const {
+  generateAccessToken,
+  generateRefreshToken,
+  verifyRefreshToken,
+  authenticateToken,
+  REFRESH_SECRET
+} = require('../middleware/auth');
 
-// POST /api/auth/login — works for both admin and customer
-router.post('/login', loginLimiter, async (req, res) => {
+// POST /api/auth/login
+router.post('/login', loginLimiter, [
+  body('username').trim().notEmpty().withMessage('Username or email required').isLength({ max: 254 }),
+  body('password').notEmpty().withMessage('Password required').isLength({ max: 200 })
+], handleValidation, async (req, res) => {
   const { username, password } = req.body;
-
-  if (!username || !password) {
-    return res.status(400).json({ error: 'Username and password required' });
-  }
-
   try {
-    const user = await get('SELECT * FROM users WHERE username = ? OR email = ?', [username, username]);
-    
-    if (!user) {
+    // Support login by email or username
+    const user = await get(
+      'SELECT * FROM users WHERE username = ? OR email = ?',
+      [username, username]
+    );
+    if (!user || !(await bcrypt.compare(password, user.password_hash))) {
       logLoginAttempt(req, username, false);
       return res.status(401).json({ error: 'Invalid credentials' });
     }
-
-    const valid = await bcrypt.compare(password, user.password_hash);
-    if (!valid) {
-      logLoginAttempt(req, username, false);
-      return res.status(401).json({ error: 'Invalid credentials' });
-    }
-
-    logLoginAttempt(req, user.username, true);
-
     const accessToken = generateAccessToken(user.id);
     const refreshToken = generateRefreshToken(user.id);
-    const ip = req.ip || req.connection.remoteAddress || 'unknown';
-    const userAgent = req.headers['user-agent'] || 'unknown';
-    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
-
+    const expires = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
     await run(
       'INSERT INTO refresh_tokens (token, user_id, ip_address, user_agent, expires_at) VALUES (?, ?, ?, ?, ?)',
-      [refreshToken, user.id, ip, userAgent, expiresAt]
+      [refreshToken, user.id, req.ip, req.headers['user-agent'] || '', expires]
     );
-
+    logLoginAttempt(req, username, true);
     res.json({
       accessToken,
       refreshToken,
@@ -50,90 +48,74 @@ router.post('/login', loginLimiter, async (req, res) => {
         email: user.email,
         role: user.role,
         fname: user.fname,
-        lname: user.lname
+        lname: user.lname,
+        phone: user.phone,
+        city: user.city
       }
     });
   } catch (err) {
     console.error('Login error:', err);
-    res.status(500).json({ error: 'Login failed' });
+    res.status(500).json({ error: 'Server error' });
   }
 });
 
-// POST /api/auth/register — customer registration
-router.post('/register', async (req, res) => {
-  const { email, password, fname, lname, phone, address, city, postcode } = req.body;
-
-  if (!email || !password) {
-    return res.status(400).json({ error: 'Email and password required' });
-  }
-
-  if (password.length < 6) {
-    return res.status(400).json({ error: 'Password must be at least 6 characters' });
-  }
-
+// POST /api/auth/register (customer only)
+router.post('/register', [
+  body('email').trim().isEmail().withMessage('Valid email required').normalizeEmail().isLength({ max: 254 }),
+  body('password').isLength({ min: 6, max: 200 }).withMessage('Password must be at least 6 characters'),
+  body('fname').optional({ checkFalsy: true }).trim().isLength({ max: 100 }),
+  body('lname').optional({ checkFalsy: true }).trim().isLength({ max: 100 }),
+  body('phone').optional({ checkFalsy: true }).trim().isLength({ max: 30 })
+], handleValidation, async (req, res) => {
+  const { email, password } = req.body;
+  const fname = stripTags(req.body.fname || '');
+  const lname = stripTags(req.body.lname || '');
+  const phone = stripTags(req.body.phone || '');
   try {
     const existing = await get('SELECT id FROM users WHERE email = ?', [email]);
     if (existing) {
-      return res.status(409).json({ error: 'Email already registered' });
+      return res.status(409).json({ error: 'An account with this email already exists' });
     }
-
     const hash = await bcrypt.hash(password, 12);
     const result = await run(
-      'INSERT INTO users (username, email, password_hash, role, fname, lname, phone, address, city, postcode) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-      [email, email, hash, 'customer', fname || '', lname || '', phone || '', address || '', city || '', postcode || '']
+      'INSERT INTO users (username, email, password_hash, role, fname, lname, phone) VALUES (?, ?, ?, ?, ?, ?, ?)',
+      [email, email, hash, 'customer', fname, lname, phone]
     );
-
-    const user = await get('SELECT id, username, email, role, fname, lname FROM users WHERE id = ?', [result.id]);
-
-    const accessToken = generateAccessToken(user.id);
-    const refreshToken = generateRefreshToken(user.id);
-    const ip = req.ip || req.connection.remoteAddress || 'unknown';
-    const userAgent = req.headers['user-agent'] || 'unknown';
-    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
-
+    const userId = result.id;
+    const accessToken = generateAccessToken(userId);
+    const refreshToken = generateRefreshToken(userId);
+    const expires = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
     await run(
       'INSERT INTO refresh_tokens (token, user_id, ip_address, user_agent, expires_at) VALUES (?, ?, ?, ?, ?)',
-      [refreshToken, user.id, ip, userAgent, expiresAt]
+      [refreshToken, userId, req.ip, req.headers['user-agent'] || '', expires]
     );
-
     res.status(201).json({
       accessToken,
       refreshToken,
-      user: {
-        id: user.id,
-        username: user.username,
-        email: user.email,
-        role: user.role,
-        fname: user.fname,
-        lname: user.lname
-      }
+      user: { id: userId, email, role: 'customer', fname: fname || '', lname: lname || '', phone: phone || '' }
     });
   } catch (err) {
-    console.error('Registration error:', err);
-    res.status(500).json({ error: 'Registration failed' });
+    console.error('Register error:', err);
+    res.status(500).json({ error: 'Server error' });
   }
 });
 
 // POST /api/auth/refresh
 router.post('/refresh', async (req, res) => {
   const { refreshToken } = req.body;
-
-  if (!refreshToken) {
-    return res.status(401).json({ error: 'Refresh token required' });
-  }
-
+  if (!refreshToken) return res.status(400).json({ error: 'Refresh token required' });
   try {
     const decoded = verifyRefreshToken(refreshToken);
-    const stored = await get('SELECT * FROM refresh_tokens WHERE token = ? AND expires_at > datetime("now")', [refreshToken]);
-    
-    if (!stored || stored.user_id !== decoded.userId) {
+    const stored = await get(
+      'SELECT * FROM refresh_tokens WHERE token = ? AND user_id = ?',
+      [refreshToken, decoded.userId]
+    );
+    if (!stored || new Date(stored.expires_at) < new Date()) {
       return res.status(403).json({ error: 'Invalid or expired refresh token' });
     }
-
-    const newAccessToken = generateAccessToken(decoded.userId);
-    res.json({ accessToken: newAccessToken });
+    const accessToken = generateAccessToken(decoded.userId);
+    res.json({ accessToken });
   } catch (err) {
-    console.error('Refresh error:', err);
     res.status(403).json({ error: 'Invalid refresh token' });
   }
 });
@@ -141,21 +123,43 @@ router.post('/refresh', async (req, res) => {
 // POST /api/auth/logout
 router.post('/logout', async (req, res) => {
   const { refreshToken } = req.body;
-
-  try {
-    if (refreshToken) {
-      await run('DELETE FROM refresh_tokens WHERE token = ?', [refreshToken]);
-    }
-    res.json({ message: 'Logged out successfully' });
-  } catch (err) {
-    console.error('Logout error:', err);
-    res.status(500).json({ error: 'Logout failed' });
+  if (refreshToken) {
+    await run('DELETE FROM refresh_tokens WHERE token = ?', [refreshToken]).catch(() => {});
   }
+  res.json({ message: 'Logged out' });
 });
 
-// GET /api/auth/me — get current user info
+// GET /api/auth/me
 router.get('/me', authenticateToken, (req, res) => {
   res.json({ user: req.user });
+});
+
+// POST /api/auth/change-password — any authenticated user, admin included
+router.post('/change-password', authenticateToken, async (req, res) => {
+  const { currentPassword, newPassword } = req.body;
+  if (!currentPassword || !newPassword) {
+    return res.status(400).json({ error: 'Current and new password required' });
+  }
+  if (newPassword.length < 8) {
+    return res.status(400).json({ error: 'New password must be at least 8 characters' });
+  }
+  if (newPassword === currentPassword) {
+    return res.status(400).json({ error: 'New password must differ from current password' });
+  }
+  try {
+    const user = await get('SELECT * FROM users WHERE id = ?', [req.user.id]);
+    if (!user || !(await bcrypt.compare(currentPassword, user.password_hash))) {
+      return res.status(401).json({ error: 'Current password is incorrect' });
+    }
+    const hash = await bcrypt.hash(newPassword, 12);
+    await run('UPDATE users SET password_hash = ? WHERE id = ?', [hash, user.id]);
+    // Invalidate all existing refresh tokens for this user — force re-login everywhere
+    await run('DELETE FROM refresh_tokens WHERE user_id = ?', [user.id]);
+    res.json({ message: 'Password updated. Please log in again.' });
+  } catch (err) {
+    console.error('Change-password error:', err);
+    res.status(500).json({ error: 'Server error' });
+  }
 });
 
 module.exports = router;

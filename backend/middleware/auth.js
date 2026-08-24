@@ -2,8 +2,22 @@ require('dotenv').config();
 const jwt = require('jsonwebtoken');
 const { get } = require('../database');
 
-const ACCESS_SECRET = process.env.JWT_ACCESS_SECRET || 'drape-access-secret-change-in-production';
-const REFRESH_SECRET = process.env.JWT_REFRESH_SECRET || 'drape-refresh-secret-change-in-production';
+const DEFAULT_ACCESS_SECRET = 'drape-access-secret-change-in-production';
+const DEFAULT_REFRESH_SECRET = 'drape-refresh-secret-change-in-production';
+
+const ACCESS_SECRET = process.env.JWT_ACCESS_SECRET || DEFAULT_ACCESS_SECRET;
+const REFRESH_SECRET = process.env.JWT_REFRESH_SECRET || DEFAULT_REFRESH_SECRET;
+
+// Fail fast: never allow the app to boot in production with a default/weak secret.
+if (process.env.NODE_ENV === 'production') {
+  const usingDefault = ACCESS_SECRET === DEFAULT_ACCESS_SECRET || REFRESH_SECRET === DEFAULT_REFRESH_SECRET;
+  const tooShort = ACCESS_SECRET.length < 32 || REFRESH_SECRET.length < 32;
+  if (usingDefault || tooShort) {
+    console.error('\n❌ FATAL: JWT_ACCESS_SECRET / JWT_REFRESH_SECRET are missing, default, or too short for production.');
+    console.error('   Generate real secrets with: node -e "console.log(require(\'crypto\').randomBytes(64).toString(\'hex\'))"\n');
+    process.exit(1);
+  }
+}
 
 function authenticateToken(req, res, next) {
   const authHeader = req.headers['authorization'];

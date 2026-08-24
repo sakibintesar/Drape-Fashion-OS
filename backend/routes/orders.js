@@ -1,182 +1,167 @@
 const express = require('express');
 const router = express.Router();
-const { all, get, run, transaction } = require('../database');
+const rateLimit = require('express-rate-limit');
+const { body } = require('express-validator');
+const { run, get, all, transaction } = require('../database');
 const { authenticateToken, requireAdmin } = require('../middleware/auth');
-const { adminLimiter } = require('../middleware/rateLimiter');
+const { handleValidation, stripTags } = require('../middleware/validate');
 
-// GET /api/orders — admin only, list all orders
-router.get('/', authenticateToken, requireAdmin, adminLimiter, async (req, res) => {
-  try {
-    const rows = await all('SELECT * FROM orders ORDER BY created_at DESC');
-    const orders = rows.map(row => ({
-      id: row.order_id,
-      name: `${row.customer_fname || ''} ${row.customer_lname || ''}`.trim(),
-      email: row.email,
-      phone: row.phone,
-      city: row.city,
-      items: JSON.parse(row.items_json || '[]'),
-      payment: row.payment_method,
-      status: row.status,
-      date: row.created_at ? row.created_at.split('T')[0] : '',
-      total: row.total,
-      _dbId: row.id
-    }));
-    res.json({ orders });
-  } catch (err) {
-    console.error('Orders fetch error:', err);
-    res.status(500).json({ error: 'Failed to fetch orders' });
-  }
+// Dedicated limiter for order placement — stricter than the general API limiter,
+// since spammed orders drain real stock and pollute the order book.
+const orderLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many orders placed from this IP. Please try again later.' }
 });
 
-// GET /api/orders/track/:orderId — public, track order
-router.get('/track/:orderId', async (req, res) => {
-  try {
-    const row = await get('SELECT * FROM orders WHERE order_id = ?', [req.params.orderId]);
-    if (!row) return res.status(404).json({ error: 'Order not found' });
-    
-    res.json({
-      order: {
-        id: row.order_id,
-        status: row.status,
-        customer: { fname: row.customer_fname, lname: row.customer_lname },
-        items: JSON.parse(row.items_json || '[]'),
-        total: row.total,
-        date: row.created_at ? row.created_at.split('T')[0] : ''
-      }
-    });
-  } catch (err) {
-    console.error('Order track error:', err);
-    res.status(500).json({ error: 'Failed to track order' });
-  }
-});
+const orderValidation = [
+  body('fname').trim().notEmpty().withMessage('First name required').isLength({ max: 100 }),
+  body('lname').optional({ checkFalsy: true }).trim().isLength({ max: 100 }),
+  body('email').trim().isEmail().withMessage('Valid email required').normalizeEmail().isLength({ max: 254 }),
+  body('phone').trim().notEmpty().withMessage('Phone required').isLength({ max: 30 }),
+  body('address').trim().notEmpty().withMessage('Address required').isLength({ max: 500 }),
+  body('city').optional({ checkFalsy: true }).trim().isLength({ max: 100 }),
+  body('postcode').optional({ checkFalsy: true }).trim().isLength({ max: 20 }),
+  body('items').isArray({ min: 1 }).withMessage('Items array required'),
+  body('items.*.id').notEmpty().withMessage('Each item needs a product id'),
+  body('items.*.qty').isInt({ min: 1, max: 999 }).withMessage('Item quantity must be a positive number')
+];
 
-// POST /api/orders/validate — public, validate cart with server-side prices
+function genOrderId() {
+  const year = new Date().getFullYear();
+  const rand = Math.floor(Math.random() * 90000) + 10000;
+  return `DRP-${year}-${rand}`;
+}
+
+// POST /api/orders/validate — validate cart prices + stock against DB
 router.post('/validate', async (req, res) => {
   const { items } = req.body;
-  if (!items || !Array.isArray(items)) {
+  if (!items || !Array.isArray(items) || !items.length) {
     return res.status(400).json({ error: 'Items array required' });
   }
-
   try {
-    const validatedItems = [];
-    let subtotal = 0;
-    let errors = [];
-
+    const issues = [];
+    const validated = [];
     for (const item of items) {
-      const product = await get('SELECT id, name, price, stock, emoji FROM products WHERE id = ?', [item.id]);
-      if (!product) {
-        errors.push({ id: item.id, error: 'Product not found' });
-        continue;
-      }
-      if (product.stock < item.qty) {
-        errors.push({ id: item.id, name: product.name, error: `Only ${product.stock} in stock` });
-        continue;
-      }
-      // Validate price matches database
-      if (product.price !== item.price) {
-        errors.push({ id: item.id, name: product.name, error: 'Price mismatch', serverPrice: product.price, clientPrice: item.price });
-        continue;
-      }
-      validatedItems.push({
-        id: product.id,
-        name: product.name,
-        price: product.price,
-        qty: item.qty,
-        size: item.size,
-        color: item.color,
-        emoji: product.emoji
-      });
-      subtotal += product.price * item.qty;
+      const product = await get('SELECT id, name, price, stock FROM products WHERE id = ?', [item.id]);
+      if (!product) { issues.push({ id: item.id, reason: 'Product not found' }); continue; }
+      if (product.stock < (item.qty || 1)) { issues.push({ id: item.id, name: product.name, reason: `Only ${product.stock} in stock` }); continue; }
+      if (product.price !== item.price) { issues.push({ id: item.id, name: product.name, reason: `Price mismatch: expected ৳${product.price}`, correctedPrice: product.price }); }
+      validated.push({ ...item, price: product.price });
     }
-
-    const shipping = subtotal > 3000 ? 0 : 80;
-
-    if (errors.length > 0) {
-      return res.status(400).json({ error: 'Validation failed', errors, validatedItems, subtotal, shipping, total: subtotal + shipping });
-    }
-
-    res.json({ valid: true, items: validatedItems, subtotal, shipping, total: subtotal + shipping });
+    res.json({ valid: issues.length === 0, issues, validated });
   } catch (err) {
-    console.error('Validation error:', err);
-    res.status(500).json({ error: 'Failed to validate order' });
+    console.error('Validate error:', err);
+    res.status(500).json({ error: 'Server error' });
   }
 });
 
-// POST /api/orders — public, create order with transaction
-router.post('/', async (req, res) => {
-  const {
-    customer_id, customer_fname, customer_lname, email, phone,
-    address, city, postcode, items, subtotal, shipping, total, payment_method
-  } = req.body;
-
-  if (!items || !total || !email) {
-    return res.status(400).json({ error: 'Items, total, and email are required' });
-  }
-
-  const orderId = 'DRAPE-' + Math.floor(1000 + Math.random() * 9000);
-
+// POST /api/orders — create order (atomic transaction)
+router.post('/', orderLimiter, orderValidation, handleValidation, async (req, res) => {
+  const { email, items, payment, customerId } = req.body;
+  const fname = stripTags(req.body.fname);
+  const lname = stripTags(req.body.lname || '');
+  const phone = stripTags(req.body.phone);
+  const address = stripTags(req.body.address);
+  const city = stripTags(req.body.city || '');
+  const postcode = stripTags(req.body.postcode || '');
   try {
-    const result = await transaction(async (t) => {
-      // 1. Validate and decrement stock for each item
+    const orderId = genOrderId();
+    const result = await transaction(async (db) => {
+      // Validate + lock stock for each item
+      let subtotal = 0;
+      const validatedItems = [];
       for (const item of items) {
-        const product = await t.get('SELECT id, price, stock FROM products WHERE id = ?', [item.id]);
+        const product = await db.get('SELECT id, name, price, stock FROM products WHERE id = ?', [item.id]);
         if (!product) throw new Error(`Product ${item.id} not found`);
-        if (product.stock < item.qty) throw new Error(`Insufficient stock for product ${item.id}`);
-        if (product.price !== item.price) throw new Error(`Price mismatch for product ${item.id}`);
-
-        // Decrement stock
-        await t.run('UPDATE products SET stock = stock - ?, sold = sold + ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?', [item.qty, item.qty, item.id]);
+        if (product.stock < item.qty) throw new Error(`Insufficient stock for ${product.name}`);
+        subtotal += product.price * item.qty;
+        validatedItems.push({ ...item, price: product.price, name: product.name });
+        // Decrement stock atomically
+        await db.run('UPDATE products SET stock = stock - ?, sold = sold + ? WHERE id = ?', [item.qty, item.qty, item.id]);
       }
-
-      // 2. Insert order
-      const orderResult = await t.run(
+      const shipping = subtotal > 3000 ? 0 : 80;
+      const total = subtotal + shipping;
+      await db.run(
         `INSERT INTO orders (order_id, customer_id, customer_fname, customer_lname, email, phone, address, city, postcode, items_json, subtotal, shipping, total, status, payment_method)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [orderId, customer_id || null, customer_fname || '', customer_lname || '', email, phone || '', address || '', city || '', postcode || '', JSON.stringify(items), subtotal, shipping, total, 'pending', payment_method || 'card']
+        [orderId, customerId || null, fname, lname || '', email, phone, address, city || '', postcode || '',
+         JSON.stringify(validatedItems), subtotal, shipping, total, 'pending', payment || 'cod']
       );
-
-      return orderResult;
+      return { orderId, subtotal, shipping, total, items: validatedItems };
     });
-
-    res.status(201).json({ orderId, id: result.id });
+    res.status(201).json({ success: true, ...result });
   } catch (err) {
-    console.error('Order create error:', err);
-    res.status(400).json({ error: err.message || 'Failed to create order' });
+    console.error('Create order error:', err.message);
+    if (err.message.includes('Insufficient') || err.message.includes('not found')) {
+      return res.status(409).json({ error: err.message });
+    }
+    res.status(500).json({ error: 'Server error' });
   }
 });
 
-// PUT /api/orders/:orderId/status — admin only, update status by orderId string
-router.put('/:orderId/status', authenticateToken, requireAdmin, adminLimiter, async (req, res) => {
+// GET /api/orders/track/:orderId — public
+router.get('/track/:orderId', async (req, res) => {
+  try {
+    const order = await get('SELECT * FROM orders WHERE order_id = ?', [req.params.orderId]);
+    if (!order) return res.status(404).json({ error: 'Order not found' });
+    res.json({
+      orderId: order.order_id,
+      status: order.status,
+      fname: order.customer_fname,
+      lname: order.customer_lname,
+      email: order.email,
+      city: order.city,
+      items: JSON.parse(order.items_json || '[]'),
+      subtotal: order.subtotal,
+      shipping: order.shipping,
+      total: order.total,
+      payment: order.payment_method,
+      date: order.created_at
+    });
+  } catch (err) {
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// GET /api/orders — admin: list all orders
+router.get('/', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const orders = await all('SELECT * FROM orders ORDER BY created_at DESC');
+    res.json({ orders: orders.map(o => ({ ...o, items: JSON.parse(o.items_json || '[]') })) });
+  } catch (err) {
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// PUT /api/orders/:orderId/status — admin
+router.put('/:orderId/status', authenticateToken, requireAdmin, async (req, res) => {
   const { status } = req.body;
-  const validStatuses = ['pending', 'confirmed', 'shipped', 'delivered', 'cancelled'];
-  
-  if (!validStatuses.includes(status)) {
-    return res.status(400).json({ error: 'Invalid status' });
+  const validStatuses = ['pending', 'processing', 'shipped', 'delivered', 'cancelled'];
+  if (!status || !validStatuses.includes(status)) {
+    return res.status(400).json({ error: `status must be one of: ${validStatuses.join(', ')}` });
   }
-
   try {
     const existing = await get('SELECT id FROM orders WHERE order_id = ?', [req.params.orderId]);
     if (!existing) return res.status(404).json({ error: 'Order not found' });
-
     await run('UPDATE orders SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE order_id = ?', [status, req.params.orderId]);
-    res.json({ message: 'Order status updated', status });
+    res.json({ success: true, status });
   } catch (err) {
-    console.error('Order status update error:', err);
-    res.status(500).json({ error: 'Failed to update order status' });
+    res.status(500).json({ error: 'Server error' });
   }
 });
 
-// DELETE /api/orders/:orderId — admin only, cancel/delete order
-router.delete('/:orderId', authenticateToken, requireAdmin, adminLimiter, async (req, res) => {
+// DELETE /api/orders/:orderId — admin cancel
+router.delete('/:orderId', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const existing = await get('SELECT id FROM orders WHERE order_id = ?', [req.params.orderId]);
     if (!existing) return res.status(404).json({ error: 'Order not found' });
-
     await run('UPDATE orders SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE order_id = ?', ['cancelled', req.params.orderId]);
-    res.json({ message: 'Order cancelled' });
+    res.json({ success: true, message: 'Order cancelled' });
   } catch (err) {
-    console.error('Order cancel error:', err);
-    res.status(500).json({ error: 'Failed to cancel order' });
+    res.status(500).json({ error: 'Server error' });
   }
 });
 

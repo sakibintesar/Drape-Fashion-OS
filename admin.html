@@ -30,7 +30,21 @@
     <button class="nav-link" onclick="showPage('social')">📱 Social</button>
     <button class="nav-link" onclick="showPage('whatsapp')">💬 WhatsApp</button>
   </div>
+  <button class="admin-btn sm" onclick="openChangePassword()" style="margin-right:8px">🔑 Change Password</button>
   <button class="logout-btn" onclick="doLogout()">Logout →</button>
+
+  <div id="changePasswordOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:999;align-items:center;justify-content:center">
+    <div style="background:#fff;padding:24px;border-radius:10px;width:320px;max-width:90vw">
+      <div style="font-weight:600;margin-bottom:12px">Change Admin Password</div>
+      <input class="form-input" type="password" id="cp_current" placeholder="Current password" style="width:100%;margin-bottom:8px">
+      <input class="form-input" type="password" id="cp_new" placeholder="New password (min 8 chars)" style="width:100%;margin-bottom:8px">
+      <div id="cp_error" style="display:none;color:#c0392b;font-size:12px;margin-bottom:8px"></div>
+      <div style="display:flex;gap:8px;justify-content:flex-end">
+        <button class="admin-btn sm" onclick="closeChangePassword()">Cancel</button>
+        <button class="admin-btn sm primary" onclick="submitChangePassword()">Update</button>
+      </div>
+    </div>
+  </div>
 </nav>
 
 <div class="page active" id="page-admin">
