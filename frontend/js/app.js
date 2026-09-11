@@ -11,6 +11,11 @@ window.addEventListener('DOMContentLoaded', async () => {
   initWaChats();
   renderAll();
   let i = 0; const t = setInterval(() => { const el = document.getElementById('heroCount'); if (el) el.textContent = i++; if (i > products.length) clearInterval(t); }, 40);
+
+  // Show newsletter popup after 30 seconds (if not dismissed)
+  setTimeout(() => {
+    if (typeof showNewsletterPopup === 'function') showNewsletterPopup();
+  }, 30000);
 });
 
 // ─── NAVIGATION ───

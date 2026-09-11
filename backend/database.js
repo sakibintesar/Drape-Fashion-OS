@@ -305,6 +305,13 @@ async function initDatabase() {
       CREATE INDEX IF NOT EXISTS idx_refresh_tokens_user_id ON refresh_tokens(user_id);
       CREATE INDEX IF NOT EXISTS idx_refresh_tokens_token ON refresh_tokens(token);
     `);
+
+    // Add share_count column if missing (for existing databases)
+    try {
+      sqliteDb.exec(`ALTER TABLE products ADD COLUMN share_count INTEGER DEFAULT 0`);
+    } catch (e) {
+      // Column already exists — ignore
+    }
   }
 }
 

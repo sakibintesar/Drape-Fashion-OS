@@ -179,6 +179,21 @@ router.delete('/:id', authenticateToken, requireAdmin, async (req, res) => {
   }
 });
 
+// POST /api/products/:id/share — track share count (public)
+router.post('/:id/share', async (req, res) => {
+  try {
+    const existing = await get('SELECT id, share_count FROM products WHERE id = ?', [req.params.id]);
+    if (!existing) return sendError(res, 404, 'Product not found', ERROR_CODES.NOT_FOUND);
+
+    const newCount = (existing.share_count || 0) + 1;
+    await run('UPDATE products SET share_count = ? WHERE id = ?', [newCount, req.params.id]);
+    res.json({ shareCount: newCount });
+  } catch (err) {
+    // Non-critical — silent fail is acceptable
+    res.json({ shareCount: 0 });
+  }
+});
+
 function tryParse(val, fallback) {
   try { return val ? JSON.parse(val) : fallback; } catch { return fallback; }
 }

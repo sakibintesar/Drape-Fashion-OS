@@ -33,6 +33,7 @@ const customerRoutes = require('./routes/customers');
 const aiRoutes = require('./routes/ai');
 const uploadRoutes = require('./routes/upload');
 const seoRoutes = require('./routes/seo');
+const newsletterRoutes = require('./routes/newsletter');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -89,6 +90,9 @@ app.use('/api/upload', uploadRoutes);
 
 // ── SEO Routes (robots.txt, sitemap.xml) ──
 app.use('/', seoRoutes);
+
+// ── Newsletter Routes ──
+app.use('/api/newsletter', newsletterRoutes);
 
 // ── Serve frontend ──
 const frontendPath = path.resolve(__dirname, '../frontend');

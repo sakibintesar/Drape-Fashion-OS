@@ -1662,4 +1662,134 @@ nav {
   }
 }
 
+/* ── NEWSLETTER POPUP ── */
+.newsletter-popup {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 1000;
+  opacity: 0;
+  transform: translateY(20px);
+  transition: all .3s ease;
+  pointer-events: none;
+}
+.newsletter-popup.show {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+.newsletter-content {
+  background: var(--bg);
+  border: 1px solid var(--dust);
+  border-radius: 16px;
+  padding: 28px;
+  max-width: 360px;
+  box-shadow: 0 12px 40px rgba(0,0,0,.15);
+  position: relative;
+}
+.newsletter-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background: none;
+  border: none;
+  font-size: 20px;
+  color: var(--slate);
+  cursor: pointer;
+  line-height: 1;
+}
+.newsletter-icon {
+  font-size: 32px;
+  margin-bottom: 12px;
+}
+.newsletter-title {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 22px;
+  font-weight: 400;
+  margin-bottom: 8px;
+}
+.newsletter-desc {
+  font-size: 13px;
+  color: var(--slate);
+  line-height: 1.6;
+  margin-bottom: 16px;
+}
+.newsletter-form {
+  display: flex;
+  gap: 8px;
+}
+.newsletter-input {
+  flex: 1;
+  padding: 10px 14px;
+  border: 1px solid var(--dust);
+  border-radius: 8px;
+  font-size: 13px;
+  background: var(--bg);
+  color: var(--text);
+}
+.newsletter-btn {
+  padding: 10px 20px;
+  background: var(--text);
+  color: var(--bg);
+  border: none;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: .05em;
+  cursor: pointer;
+  transition: opacity .2s;
+}
+.newsletter-btn:hover { opacity: .85; }
+.newsletter-success {
+  background: #d4edda;
+  color: #155724;
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-size: 12px;
+  margin-top: 12px;
+}
+.newsletter-error {
+  background: #f8d7da;
+  color: #721c24;
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-size: 12px;
+  margin-top: 12px;
+}
+
+@media (max-width: 480px) {
+  .newsletter-popup {
+    bottom: 16px;
+    right: 16px;
+    left: 16px;
+  }
+  .newsletter-content {
+    max-width: 100%;
+  }
+}
+
+/* ── SHARE BUTTONS ── */
+.share-buttons {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 12px;
+}
+.share-btn {
+  padding: 8px 14px;
+  border: 1px solid var(--dust);
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 12px;
+  cursor: pointer;
+  transition: all .2s;
+}
+.share-btn:hover {
+  border-color: var(--text);
+}
+.share-btn.whatsapp:hover { border-color: #25D366; color: #25D366; }
+.share-btn.facebook:hover { border-color: #1877F2; color: #1877F2; }
+.share-btn.copy:hover { border-color: var(--accent); color: var(--accent); }
+
 
