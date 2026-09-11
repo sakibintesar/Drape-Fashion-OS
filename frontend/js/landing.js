@@ -184,14 +184,14 @@ function renderHscrollItem(product) {
     <div class="hscroll-item-img">
       ${product.image_url
         ? `<img src="${escapeHtml(product.image_url)}" loading="lazy" alt="${escapeHtml(product.name)}">`
-        : `<span class="hscroll-emoji">${product.emoji}</span>`
+        : `<span class="hscroll-emoji">${product.emoji || '👗'}</span>`
       }
       ${product.badge ? `<span class="hscroll-badge">${escapeHtml(product.badge)}</span>` : ''}
     </div>
     <div class="hscroll-item-info">
-      <div class="hscroll-item-cat">${escapeHtml(product.category)}</div>
-      <div class="hscroll-item-name">${escapeHtml(product.name)}</div>
-      <div class="hscroll-item-price mono">৳${product.price.toLocaleString()}</div>
+      <div class="hscroll-item-cat">${escapeHtml(product.category || '')}</div>
+      <div class="hscroll-item-name">${escapeHtml(product.name || '')}</div>
+      <div class="hscroll-item-price mono">৳${(product.price || 0).toLocaleString()}</div>
     </div>
   </div>`;
 }
@@ -395,12 +395,20 @@ function initLanding(products) {
 
   // Populate gallery
   if (products && products.length) {
-    populateGallery(products);
+    try {
+      populateGallery(products);
+    } catch (err) {
+      console.error('[DRAPE] populateGallery FAILED:', err);
+    }
   }
 
   // Initialize animations after DOM is ready
   requestAnimationFrame(() => {
-    initAnimations();
+    try {
+      initAnimations();
+    } catch (err) {
+      console.error('[DRAPE] initAnimations FAILED:', err);
+    }
   });
 }
 

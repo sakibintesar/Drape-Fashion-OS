@@ -13,7 +13,17 @@ window.addEventListener('DOMContentLoaded', async () => {
 
   // Initialize premium landing page
   if (typeof initLanding === 'function') {
-    initLanding(products);
+    try {
+      console.log('[DRAPE] initLanding called with', products?.length ?? 0, 'products');
+      initLanding(products);
+      const heroFull = document.querySelector('#page-home .hero-full');
+      const heroOld = document.querySelector('#page-home .hero');
+      console.log('[DRAPE] After initLanding — hero-full:', !!heroFull, 'old .hero:', !!heroOld);
+    } catch (err) {
+      console.error('[DRAPE] initLanding FAILED:', err);
+    }
+  } else {
+    console.warn('[DRAPE] initLanding not found — landing.js may not have loaded');
   }
 
   // Show newsletter popup after 30 seconds (if not dismissed)
