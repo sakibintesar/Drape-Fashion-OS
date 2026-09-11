@@ -1,14 +1,21 @@
 const { RateLimiterRedis, RateLimiterMemory } = require('rate-limiter-flexible');
 
 // ---------------------------------------------------------------------------
-// Redis client — imported lazily so the app can start even if Redis is down.
-// The redis module logs its own connection errors and never throws.
+// Redis client — only used when REDIS_HOST (or REDIS_URL) is explicitly set.
+// On platforms without Redis (Render free tier, local SQLite), we skip Redis
+// entirely to avoid the limiter hanging on unreachable connections.
 // ---------------------------------------------------------------------------
 let redis;
-try {
-  redis = require('../lib/redis');
-} catch (_) {
+const hasRedis = process.env.REDIS_HOST || process.env.REDIS_URL;
+if (hasRedis) {
+  try {
+    redis = require('../lib/redis');
+  } catch (_) {
+    redis = null;
+  }
+} else {
   redis = null;
+  console.log('[RateLimiter] No Redis configured — using in-memory limiter');
 }
 
 // ---------------------------------------------------------------------------
