@@ -1,0 +1,14 @@
+node_modules/
+__tests__/
+*.test.js
+jest.config.js
+.env
+.env.example
+.git/
+.github/
+.vscode/
+*.md
+*.log
+backend/drape.db*
+render.yaml
+docker-compose.yml

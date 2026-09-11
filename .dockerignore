@@ -1,0 +1,53 @@
+# Dependencies
+node_modules
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# Database files
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+
+# Git
+.git
+.gitignore
+
+# Tests
+__tests__
+test/
+tests/
+*.test.js
+*.spec.js
+coverage/
+.nyc_output/
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Logs
+*.log
+backend/logs/
+
+# Dev tools
+nodemon.json
+docker-compose.yml
+.dockerignore
+
+# Deployment docs (not needed in image)
+README.md
+DEPLOY_RAILWAY.sh
+HANDOFF.md
+CURRENT_SESSION_STATE.md

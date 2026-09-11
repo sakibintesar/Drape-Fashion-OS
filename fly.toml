@@ -1,0 +1,48 @@
+# Fly.io deployment config for DRAPE Fashion OS
+# Docs: https://fly.io/docs/reference/configuration/
+
+app = "drape-fashion-os"
+primary_region = "sin"
+
+[build]
+  dockerfile = "Dockerfile"
+
+[env]
+  NODE_ENV = "production"
+  PORT = "3000"
+  # Set these in Fly dashboard or via: fly secrets set JWT_ACCESS_SECRET=xxx JWT_REFRESH_SECRET=xxx
+  # Do NOT put secrets here.
+
+[http_service]
+  internal_port = 3000
+  force_https = true
+  auto_stop_machines = true
+  auto_start_machines = true
+  min_machines_running = 0
+
+  [http_service.concurrency]
+    type = "requests"
+    hard_limit = 250
+    soft_limit = 200
+
+[[http_service.checks]]
+  grace_period = "15s"
+  interval = "30s"
+  method = "GET"
+  path = "/api/health"
+  timeout = "10s"
+
+# SQLite volume (for default mode without PostgreSQL)
+# Uncomment if using SQLite instead of PostgreSQL:
+# [mounts]
+#   source = "drape_data"
+#   destination = "/app/data"
+
+# PostgreSQL via Fly Postgres (optional)
+# Create a Postgres cluster:
+#   fly postgres create --name drape-db --region sin
+#   fly secrets set DATABASE_URL=postgresql://drape:xxx@xxx.flycast:5432/drape_db
+
+# Redis via Upstash or similar (optional)
+# Set Redis vars in secrets:
+#   fly secrets set REDIS_HOST=xxx.upstash.io REDIS_PORT=6379 REDIS_PASSWORD=xxx
