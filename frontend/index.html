@@ -325,12 +325,12 @@
       <div>
         <h3 style="font-size:10px;letter-spacing:.1em;text-transform:uppercase;margin-bottom:16px;color:var(--slate)">Payment</h3>
         <div class="pay-methods">
-          <div class="pay-method selected" onclick="selectPay('card',this)"><span class="pay-method-icon">💳</span>Card</div>
+          <div class="pay-method selected" onclick="selectPay('cod',this)"><span class="pay-method-icon">🚪</span>COD</div>
           <div class="pay-method" onclick="selectPay('bkash',this)"><span class="pay-method-icon">📱</span>bKash</div>
           <div class="pay-method" onclick="selectPay('nagad',this)"><span class="pay-method-icon">🏦</span>Nagad</div>
-          <div class="pay-method" onclick="selectPay('cod',this)"><span class="pay-method-icon">🚪</span>COD</div>
+          <div class="pay-method" onclick="selectPay('card',this)"><span class="pay-method-icon">💳</span>Card</div>
         </div>
-        <div class="pf show" id="pf_card">
+        <div class="pf" id="pf_card">
           <div style="background:#fff3cd;border:1px solid #ffc107;padding:10px 14px;border-radius:6px;font-size:11px;color:#856404;margin-bottom:12px">⚠️ <strong>Demo Mode</strong> — No real payment will be processed. Card fields are simulated.</div>
           <div class="form-group"><label class="form-label">Card Number</label><input class="form-input" id="co_card" placeholder="4242 4242 4242 4242" maxlength="19" oninput="fmtCard(this)" readonly></div>
           <div class="form-row">
@@ -338,8 +338,39 @@
             <div class="form-group"><label class="form-label">CVV</label><input class="form-input" id="co_cvv" placeholder="123" maxlength="3" type="text" readonly></div>
           </div>
         </div>
-        <div class="pf" id="pf_bkash"><div class="bkash-box"><label class="form-label" style="color:#E2136E">bKash Number</label><input class="form-input" id="co_bkash" placeholder="+880 1XXXXXXXXX"><div style="font-size:11px;color:var(--slate);margin-top:8px">OTP will be sent to confirm.</div></div></div>
-        <div class="pf" id="pf_nagad"><div class="nagad-box"><label class="form-label" style="color:#F7941D">Nagad Number</label><input class="form-input" id="co_nagad" placeholder="+880 1XXXXXXXXX"><div style="font-size:11px;color:var(--slate);margin-top:8px">PIN confirmation via SMS.</div></div></div>
+        <div class="pf show" id="pf_cod">
+          <div style="background:#f0f9ff;border:1px solid #bae6fd;padding:14px;border-radius:8px;font-size:12px;color:#0c4a6e;line-height:1.7">
+            ✔ <strong>Cash on Delivery</strong> — Pay when your order arrives<br>
+            ✔ Available for all Bangladesh addresses<br>
+            ✔ Our delivery agent carries exact change
+          </div>
+        </div>
+        <div class="pf" id="pf_bkash">
+          <div class="bkash-box">
+            <label class="form-label" style="color:#E2136E">bKash Number</label>
+            <input class="form-input" id="co_bkash" placeholder="+880 1XXXXXXXXX">
+            <div style="background:#fdf2f8;border:1px solid #fbcfe8;padding:12px;border-radius:8px;font-size:11px;color:#9d174d;margin-top:12px;line-height:1.7">
+              <strong>How to pay with bKash:</strong><br>
+              1. Enter your bKash number above<br>
+              2. Click "Place Order" to confirm<br>
+              3. You'll receive an SMS with payment instructions<br>
+              4. Complete payment within 2 hours to confirm order
+            </div>
+          </div>
+        </div>
+        <div class="pf" id="pf_nagad">
+          <div class="nagad-box">
+            <label class="form-label" style="color:#F7941D">Nagad Number</label>
+            <input class="form-input" id="co_nagad" placeholder="+880 1XXXXXXXXX">
+            <div style="background:#fffbeb;border:1px solid #fde68a;padding:12px;border-radius:8px;font-size:11px;color:#92400e;margin-top:12px;line-height:1.7">
+              <strong>How to pay with Nagad:</strong><br>
+              1. Enter your Nagad number above<br>
+              2. Click "Place Order" to confirm<br>
+              3. You'll receive an SMS with payment instructions<br>
+              4. Complete payment within 2 hours to confirm order
+            </div>
+          </div>
+        </div>
       </div>
       <button class="place-btn" onclick="openPayGateway()" id="placeBtn">Secure Checkout →  🔒</button>
     </div>
@@ -475,10 +506,10 @@
           <div class="pgw-amount-value" id="pgwAmount">৳0</div>
         </div>
         <div class="pgw-methods">
-          <div class="pgw-method sel" onclick="selPgwMethod('card',this)">
-            <div class="pgw-method-icon">💳</div>
-            <div class="pgw-method-name">Credit / Debit</div>
-            <div class="pgw-method-tag">Visa · MC · Amex</div>
+          <div class="pgw-method sel" onclick="selPgwMethod('cod',this)">
+            <div class="pgw-method-icon">🚚</div>
+            <div class="pgw-method-name">Cash on Delivery</div>
+            <div class="pgw-method-tag">Pay on receipt</div>
           </div>
           <div class="pgw-method" onclick="selPgwMethod('bkash',this)">
             <div class="pgw-method-icon" style="background:#E2136E;border-radius:8px;width:32px;height:32px;display:flex;align-items:center;justify-content:center;margin:0 auto 4px;font-size:14px;color:white">b</div>
@@ -490,13 +521,13 @@
             <div class="pgw-method-name">Nagad</div>
             <div class="pgw-method-tag">Mobile Banking</div>
           </div>
-          <div class="pgw-method" onclick="selPgwMethod('cod',this)">
-            <div class="pgw-method-icon">🚚</div>
-            <div class="pgw-method-name">Cash on Delivery</div>
-            <div class="pgw-method-tag">Pay on receipt</div>
+          <div class="pgw-method" onclick="selPgwMethod('card',this)">
+            <div class="pgw-method-icon">💳</div>
+            <div class="pgw-method-name">Credit / Debit</div>
+            <div class="pgw-method-tag">Visa · MC · Amex</div>
           </div>
         </div>
-        <div id="pgw_card_fields">
+        <div id="pgw_card_fields" style="display:none">
           <div style="background:#fff3cd;border:1px solid #ffc107;padding:10px 14px;border-radius:6px;font-size:11px;color:#856404;margin-bottom:12px">⚠️ <strong>Demo Mode</strong> — This is a simulated payment gateway. No real card data is processed or stored.</div>
           <div class="pgw-field-group"><label class="pgw-label">Card Number</label><input class="pgw-input" id="pgw_card" placeholder="4242 4242 4242 4242" maxlength="19" readonly></div>
           <div class="pgw-row">
@@ -524,9 +555,12 @@
           <div style="background:#fff3cd;border:1px solid #ffc107;padding:10px 14px;border-radius:6px;font-size:11px;color:#856404;margin-bottom:12px">⚠️ <strong>Demo Mode</strong> — Simulated Nagad payment.</div>
           <div class="pgw-field-group"><label class="pgw-label" style="color:#F7941D">Nagad Account Number</label><input class="pgw-input" id="pgw_nagad" placeholder="+880 1XXXXXXXXX" readonly></div>
         </div>
-        <div id="pgw_cod_fields" style="display:none">
-          <div style="background:#fff8f0;border:1px solid var(--dust);padding:14px;font-size:12px;color:var(--slate);line-height:1.7">
-            ✔ Pay in cash when your order arrives.<br>✔ Our delivery agent carries exact change.<br>✔ Please have payment ready at the door.
+        <div id="pgw_cod_fields">
+          <div style="background:#f0f9ff;border:1px solid #bae6fd;padding:14px;border-radius:8px;font-size:12px;color:#0c4a6e;line-height:1.7">
+            ✔ <strong>Cash on Delivery</strong> — Pay when your order arrives<br>
+            ✔ Available for all Bangladesh addresses<br>
+            ✔ Our delivery agent carries exact change<br>
+            ✔ Please have payment ready at the door
           </div>
         </div>
         <div class="pgw-ssl"><span class="pgw-ssl-icon">🔐</span><span>Your payment is encrypted with 256-bit SSL. DRAPE never stores card details.</span></div>

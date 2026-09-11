@@ -3,6 +3,9 @@
 // Checkout page rendering, payment method selection, form validation,
 // and the simulated payment gateway (Pgw) flow.
 
+// Default payment method is COD
+selPay = 'cod';
+
 function renderCoSummary() {
   // Show login banner if not authenticated
   const loginBanner = document.getElementById('checkoutLoginBanner');
