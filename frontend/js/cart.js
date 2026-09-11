@@ -19,6 +19,11 @@ function pCard(p) {
         ${p.origPrice ? `<div class="product-orig mono">৳${p.origPrice.toLocaleString()}</div>` : ''}
       </div>
       <div class="variant-dots">${p.colors.slice(0, 5).map(c => `<div class="variant-dot" style="background:${c.hex}" title="${escapeHtml(c.name)}"></div>`).join('')}</div>
+      ${(p.sold > 0 || p.share_count > 0) ? `
+      <div class="social-proof">
+        ${p.sold > 0 ? `<span class="proof-item">🔥 ${p.sold} sold</span>` : ''}
+        ${p.share_count > 0 ? `<span class="proof-item">📱 ${p.share_count} shares</span>` : ''}
+      </div>` : ''}
     </div>
   </div>`;
 }

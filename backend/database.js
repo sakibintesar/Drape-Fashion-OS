@@ -319,6 +319,28 @@ async function initDatabase() {
 
       CREATE INDEX IF NOT EXISTS idx_reviews_product_id ON reviews(product_id);
       CREATE INDEX IF NOT EXISTS idx_reviews_user_id ON reviews(user_id);
+
+      CREATE TABLE IF NOT EXISTS referrals (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER REFERENCES users(id),
+        email TEXT,
+        code TEXT NOT NULL UNIQUE,
+        total_referrals INTEGER DEFAULT 0,
+        total_earned INTEGER DEFAULT 0,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+
+      CREATE TABLE IF NOT EXISTS referral_events (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        referral_code TEXT NOT NULL,
+        order_id TEXT,
+        new_user_email TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (referral_code) REFERENCES referrals(code)
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_referrals_code ON referrals(code);
+      CREATE INDEX IF NOT EXISTS idx_referral_events_code ON referral_events(referral_code);
     `);
 
     // Add share_count column if missing (for existing databases)

@@ -35,6 +35,7 @@ const uploadRoutes = require('./routes/upload');
 const seoRoutes = require('./routes/seo');
 const newsletterRoutes = require('./routes/newsletter');
 const reviewRoutes = require('./routes/reviews');
+const referralRoutes = require('./routes/referrals');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -97,6 +98,9 @@ app.use('/api/newsletter', newsletterRoutes);
 
 // ── Review Routes ──
 app.use('/api/reviews', reviewRoutes);
+
+// ── Referral Routes ──
+app.use('/api/referrals', referralRoutes);
 
 // ── Serve frontend ──
 const frontendPath = path.resolve(__dirname, '../frontend');

@@ -38,7 +38,7 @@ router.post('/validate', optionalAuth, async (req, res) => {
 
 // POST /api/orders — create order (atomic transaction)
 router.post('/', optionalAuth, async (req, res) => {
-  const { fname, lname, email, phone, address, city, postcode, items, payment } = req.body;
+  const { fname, lname, email, phone, address, city, postcode, items, payment, referral_code } = req.body;
   if (!fname || !email || !phone || !address || !items?.length) {
     return sendError(res, 400, 'Missing required fields', ERROR_CODES.VALIDATION_ERROR);
   }
@@ -65,6 +65,27 @@ router.post('/', optionalAuth, async (req, res) => {
         [orderId, req.user?.id || null, fname, lname || '', email, phone, address, city || '', postcode || '',
          JSON.stringify(validatedItems), subtotal, shipping, total, 'pending', payment || 'cod']
       );
+
+      // Log referral if code provided
+      if (referral_code) {
+        try {
+          await db.run(
+            'INSERT INTO referral_events (referral_code, order_id, new_user_email) VALUES (?, ?, ?)',
+            [referral_code, orderId, email]
+          );
+          await db.run(
+            'UPDATE referrals SET total_referrals = total_referrals + 1 WHERE code = ?',
+            [referral_code]
+          );
+        } catch (e) {
+          // Non-critical — don't fail order if referral tracking fails
+          console.error('Referral tracking error:', e.message);
+        }
+      }
+
+      // Log order confirmation
+      console.log(`[ORDER] ${orderId} | ${fname} ${lname || ''} | ৳${total} | ${items.length} items | ${payment || 'cod'}`);
+
       return { orderId, subtotal, shipping, total, items: validatedItems };
     });
     res.status(201).json({ success: true, ...result });
