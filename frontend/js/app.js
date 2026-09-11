@@ -10,7 +10,11 @@ window.addEventListener('DOMContentLoaded', async () => {
   await loadProductsFromAPI();
   initWaChats();
   renderAll();
-  let i = 0; const t = setInterval(() => { const el = document.getElementById('heroCount'); if (el) el.textContent = i++; if (i > products.length) clearInterval(t); }, 40);
+
+  // Initialize premium landing page
+  if (typeof initLanding === 'function') {
+    initLanding(products);
+  }
 
   // Show newsletter popup after 30 seconds (if not dismissed)
   setTimeout(() => {
