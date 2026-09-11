@@ -8,7 +8,7 @@ function pCard(p) {
   const bc = p.stock === 0 ? 'badge-out' : (p.origPrice ? 'badge-sale' : '');
   return `<div class="product-card" onclick="openModal(${p.id})">
     ${bt ? `<div class="product-badge ${bc}">${escapeHtml(bt)}</div>` : ''}
-    <div class="product-img">${p.emoji}</div>
+    <div class="product-img">${p.image_url ? `<img src="${escapeHtml(p.image_url)}" style="width:100%;height:100%;object-fit:cover" alt="${escapeHtml(p.name)}">` : p.emoji}</div>
     <div class="product-overlay"><button class="overlay-btn">Quick View</button></div>
     <div class="product-info">
       <div class="product-category">${escapeHtml(p.category)}</div>
@@ -25,7 +25,7 @@ function pCard(p) {
 
 function subCard(p) {
   return `<div class="sub-card" onclick="openModal(${p.id})">
-    <div class="sub-card-img">${p.emoji}</div>
+    <div class="sub-card-img">${p.image_url ? `<img src="${escapeHtml(p.image_url)}" style="width:100%;height:100%;object-fit:cover" alt="${escapeHtml(p.name)}">` : p.emoji}</div>
     <div class="sub-card-info">
       <div class="sub-card-name">${p.name}</div>
       <div class="sub-card-price mono">৳${p.price.toLocaleString()}</div>
@@ -39,7 +39,7 @@ function openModal(id) {
   selProd = products.find(p => p.id === id); if (!selProd) return;
   selColor = null; selSize = null; mQty = 1;
   const mi = document.getElementById('modalImg');
-  if (mi) mi.innerHTML = `<span style="font-size:88px">${selProd.emoji}</span>`;
+  if (mi) mi.innerHTML = selProd.image_url ? `<img src="${escapeHtml(selProd.image_url)}" style="max-width:100%;max-height:320px;object-fit:contain;border-radius:8px" alt="${escapeHtml(selProd.name)}">` : `<span style="font-size:88px">${selProd.emoji}</span>`;
   const mc = document.getElementById('modalCat');
   if (mc) mc.textContent = selProd.category;
   const mv = document.getElementById('modalVendor');
@@ -91,7 +91,7 @@ function selColorFn(name, hex, el) {
   const cl = document.getElementById('colorLabel');
   if (cl) cl.textContent = name;
   const mi = document.getElementById('modalImg');
-  if (mi) mi.innerHTML = `<span style="font-size:88px">${selProd.emoji}</span><div style="width:28px;height:28px;border-radius:50%;background:${hex};border:2px solid rgba(0,0,0,.1);margin-top:8px"></div>`;
+  if (mi) mi.innerHTML = (selProd.image_url ? `<img src="${escapeHtml(selProd.image_url)}" style="max-width:100%;max-height:320px;object-fit:contain;border-radius:8px" alt="${escapeHtml(selProd.name)}">` : `<span style="font-size:88px">${selProd.emoji}</span>`) + `<div style="width:28px;height:28px;border-radius:50%;background:${hex};border:2px solid rgba(0,0,0,.1);margin-top:8px"></div>`;
 }
 function selSizeFn(size, btn) {
   selSize = size;
@@ -127,7 +127,7 @@ function updateCartUI() {
     if (foot) foot.style.display = 'none';
     return;
   }
-  if (con) con.innerHTML = cart.map(i => `<div class="cart-item"><div class="cart-item-img">${i.prod.emoji}</div><div class="cart-item-details"><div class="cart-item-name">${escapeHtml(i.prod.name)}</div><div class="cart-item-meta">${escapeHtml(i.color)} · ${escapeHtml(i.size)} · Qty ${i.qty}</div><div class="cart-item-price mono">৳${(i.prod.price * i.qty).toLocaleString()}</div></div><button class="cart-item-remove" onclick="removeFromCart('${escapeHtml(i.key)}')">×</button></div>`).join('');
+  if (con) con.innerHTML = cart.map(i => `<div class="cart-item"><div class="cart-item-img">${i.prod.image_url ? `<img src="${escapeHtml(i.prod.image_url)}" style="width:100%;height:100%;object-fit:cover;border-radius:4px" alt="${escapeHtml(i.prod.name)}">` : i.prod.emoji}</div><div class="cart-item-details"><div class="cart-item-name">${escapeHtml(i.prod.name)}</div><div class="cart-item-meta">${escapeHtml(i.color)} · ${escapeHtml(i.size)} · Qty ${i.qty}</div><div class="cart-item-price mono">৳${(i.prod.price * i.qty).toLocaleString()}</div></div><button class="cart-item-remove" onclick="removeFromCart('${escapeHtml(i.key)}')">×</button></div>`).join('');
   const sub = cart.reduce((s, i) => s + i.prod.price * i.qty, 0), ship = sub > 3000 ? 0 : 80;
   const cs = document.getElementById('cartSubtotal');
   if (cs) cs.textContent = '৳' + sub.toLocaleString();

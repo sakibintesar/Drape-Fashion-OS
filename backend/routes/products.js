@@ -59,7 +59,7 @@ router.get('/:id', async (req, res) => {
 
 // POST /api/products — admin only
 router.post('/', authenticateToken, requireAdmin, async (req, res) => {
-  const { name, category, vendor, price, origPrice, stock, emoji, colors, sizes, description, badge, material, care, origin, subs } = req.body;
+  const { name, category, vendor, price, origPrice, stock, emoji, colors, sizes, description, badge, material, care, origin, subs, imageUrl } = req.body;
   if (!name || !category || !vendor || price == null) {
     return sendError(res, 400, 'name, category, vendor, price are required', ERROR_CODES.VALIDATION_ERROR);
   }
@@ -86,12 +86,12 @@ router.post('/', authenticateToken, requireAdmin, async (req, res) => {
   const maxLen = (v, max) => typeof v === 'string' ? v.substring(0, max) : v || '';
   try {
     const result = await run(
-      `INSERT INTO products (name, category, vendor, price, orig_price, stock, emoji, colors_json, sizes_json, description, badge, material, care, origin, subs_json)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO products (name, category, vendor, price, orig_price, stock, emoji, colors_json, sizes_json, description, badge, material, care, origin, subs_json, image_url)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [maxLen(name, 200), maxLen(category, 100), maxLen(vendor, 200), price, origPrice || null, stock || 0, emoji || '👗',
        JSON.stringify(colors || []), JSON.stringify(sizes || []),
        maxLen(description, 2000), maxLen(badge, 100), maxLen(material, 200), maxLen(care, 200), maxLen(origin, 200),
-       JSON.stringify(subs || [])]
+       JSON.stringify(subs || []), imageUrl || null]
     );
     const created = await get('SELECT * FROM products WHERE id = ?', [result.id]);
     res.status(201).json(created);
@@ -103,7 +103,7 @@ router.post('/', authenticateToken, requireAdmin, async (req, res) => {
 
 // PUT /api/products/:id — admin only
 router.put('/:id', authenticateToken, requireAdmin, async (req, res) => {
-  const { name, category, vendor, price, origPrice, stock, emoji, colors, sizes, description, badge, material, care, origin, subs } = req.body;
+  const { name, category, vendor, price, origPrice, stock, emoji, colors, sizes, description, badge, material, care, origin, subs, imageUrl } = req.body;
   // ── Input validation ──
   if (price != null && (typeof price !== 'number' || isNaN(price) || price < 0)) {
     return sendError(res, 400, 'price must be a non-negative number', ERROR_CODES.VALIDATION_ERROR);
@@ -146,6 +146,7 @@ router.put('/:id', authenticateToken, requireAdmin, async (req, res) => {
     if (care != null)         { fields.push('care = ?');         values.push(maxLen(care, 200)); }
     if (origin != null)       { fields.push('origin = ?');       values.push(maxLen(origin, 200)); }
     if (subs != null)         { fields.push('subs_json = ?');    values.push(JSON.stringify(subs)); }
+    if (imageUrl !== undefined) { fields.push('image_url = ?');  values.push(imageUrl || null); }
 
     if (fields.length === 0) {
       return sendError(res, 400, 'No fields to update', ERROR_CODES.VALIDATION_ERROR);

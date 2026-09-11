@@ -278,7 +278,7 @@ async function renderInventory() {
   if (!tbody) return;
   tbody.innerHTML = products.map(p => `
     <tr>
-      <td><span style="font-size:18px">${p.emoji || '👗'}</span> ${escapeHtml(p.name)}</td>
+      <td>${p.image_url ? `<img src="${escapeHtml(p.image_url)}" style="width:28px;height:28px;border-radius:4px;object-fit:cover;vertical-align:middle;margin-right:6px">` : `<span style="font-size:18px">${p.emoji || '👗'}</span>`} ${escapeHtml(p.name)}</td>
       <td style="font-size:11px">${escapeHtml(p.vendor)}</td>
       <td style="color:var(--slate);font-size:11px">${escapeHtml(p.category)}</td>
       <td style="font-weight:500">${fmt(p.price)}</td>
@@ -305,6 +305,11 @@ function openAddProd() {
   ['np_name','np_price','np_orig','np_stock','np_emoji','np_desc','np_sizes','np_colors','np_subs','np_material','np_badge'].forEach(id => {
     const el = document.getElementById(id); if (el) el.value = '';
   });
+  // Clear image preview and file input
+  const imgInput = document.getElementById('np_image');
+  const imgPreview = document.getElementById('np_image_preview');
+  if (imgInput) imgInput.value = '';
+  if (imgPreview) { imgPreview.style.display = 'none'; imgPreview.src = ''; }
   document.getElementById('addProdModal').classList.add('open');
 }
 
@@ -317,6 +322,19 @@ function openEditProd(id) {
   setVal('np_sizes', Array.isArray(p.sizes) ? p.sizes.join(',') : '');
   setVal('np_colors', Array.isArray(p.colors) ? p.colors.map(c => `${c.name}:${c.hex}`).join(',') : '');
   setVal('np_material', p.material || ''); setVal('np_badge', p.badge || '');
+  // Show existing image preview if product has one
+  const imgInput = document.getElementById('np_image');
+  const imgPreview = document.getElementById('np_image_preview');
+  if (imgInput) imgInput.value = '';
+  if (imgPreview) {
+    if (p.image_url) {
+      imgPreview.src = p.image_url;
+      imgPreview.style.display = 'block';
+    } else {
+      imgPreview.style.display = 'none';
+      imgPreview.src = '';
+    }
+  }
   document.getElementById('addProdModal').classList.add('open');
 }
 
@@ -359,10 +377,40 @@ async function saveProduct() {
         method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
       });
     }
+
+    let productId = editProductId;
     if (res && res.ok) {
+      const savedProduct = await res.json();
+      productId = savedProduct.id || editProductId;
       showToast(editProductId ? 'Product updated!' : 'Product added!', 'success');
     } else {
       showToast('Saved locally (no API connection).', 'success');
+    }
+
+    // Upload image if file selected
+    const imgFile = document.getElementById('np_image')?.files[0];
+    if (imgFile && productId) {
+      try {
+        const formData = new FormData();
+        formData.append('image', imgFile);
+        const uploadRes = await authFetch(`${API_BASE}/upload`, {
+          method: 'POST',
+          body: formData
+        });
+        if (uploadRes.ok) {
+          const uploadData = await uploadRes.json();
+          // Update product with image URL
+          await authFetch(`${API_BASE}/products/${productId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ imageUrl: uploadData.url })
+          });
+          showToast('Image uploaded!', 'success');
+        }
+      } catch (e) {
+        console.error('Image upload failed:', e);
+        showToast('Image upload failed.', 'error');
+      }
     }
   } catch (e) {
     showToast('Saved locally (no API connection).', 'success');
@@ -781,4 +829,24 @@ window.addEventListener('DOMContentLoaded', async () => {
 document.addEventListener('DOMContentLoaded', () => {
   const pass = document.getElementById('loginPassword');
   if (pass) pass.addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+
+  // Image preview on file select
+  const imgInput = document.getElementById('np_image');
+  const imgPreview = document.getElementById('np_image_preview');
+  if (imgInput && imgPreview) {
+    imgInput.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+          imgPreview.src = ev.target.result;
+          imgPreview.style.display = 'block';
+        };
+        reader.readAsDataURL(file);
+      } else {
+        imgPreview.style.display = 'none';
+        imgPreview.src = '';
+      }
+    });
+  }
 });

@@ -31,6 +31,7 @@ const orderRoutes = require('./routes/orders');
 const analyticsRoutes = require('./routes/analytics');
 const customerRoutes = require('./routes/customers');
 const aiRoutes = require('./routes/ai');
+const uploadRoutes = require('./routes/upload');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -43,7 +44,7 @@ app.use((req, res, next) => {
   res.setHeader('X-Frame-Options', 'SAMEORIGIN');
   res.setHeader('X-XSS-Protection', '1; mode=block');
   // SECURITY FIX: Add Content-Security-Policy header
-  res.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:;");
+  res.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https://res.cloudinary.com;");
   if (NODE_ENV === 'production') {
     res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
   }
@@ -83,6 +84,7 @@ app.use('/api/orders', orderRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/customers', customerRoutes);
 app.use('/api/ai', aiRoutes);
+app.use('/api/upload', uploadRoutes);
 
 // ── Serve frontend ──
 const frontendPath = path.resolve(__dirname, '../frontend');
