@@ -13,6 +13,8 @@ services:
         generateValue: true
       - key: JWT_REFRESH_SECRET
         generateValue: true
+      - key: SEED_ON_START
+        value: "true"
       - key: CORS_ORIGIN
         value: https://drape-fashion-os.onrender.com
       - key: DB_PATH
