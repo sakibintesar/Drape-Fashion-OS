@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sell on DRAPE — Partner with Us</title>
+<meta name="description" content="Join DRAPE as a seller. We partner with artisan brands across Bangladesh to bring curated fashion to customers worldwide.">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<nav>
+  <div class="nav-logo" onclick="location.href='/'">DR<span>A</span>PE</div>
+  <div class="nav-links">
+    <button class="nav-link" onclick="location.href='/'">Home</button>
+    <button class="nav-link" onclick="location.href='/?page=shop'">Shop</button>
+    <button class="nav-link" onclick="location.href='/?page=brands'">Brands</button>
+  </div>
+  <div style="display:flex;align-items:center;gap:10px;">
+    <button class="theme-toggle" onclick="toggleTheme()" title="Toggle dark mode">🌙</button>
+    <button class="mobile-menu-btn" onclick="openMobileNav()">☰</button>
+  </div>
+</nav>
+
+<div class="page active" style="max-width:900px;margin:0 auto;padding:40px 24px">
+  <h1 class="display" style="margin-bottom:8px">Sell on DRAPE</h1>
+  <p style="font-size:14px;color:var(--slate);margin-bottom:40px;max-width:600px;line-height:1.7">We partner with artisan brands across Bangladesh to bring curated, sustainable fashion to customers worldwide. Join us.</p>
+
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:24px;margin-bottom:48px">
+    <div style="padding:24px;border:1px solid var(--dust);border-radius:12px">
+      <div style="font-size:32px;margin-bottom:12px">📦</div>
+      <h3 style="font-family:'Cormorant Garamond',serif;font-size:18px;font-weight:400;margin-bottom:8px">Zero Upfront Cost</h3>
+      <p style="font-size:13px;color:var(--slate);line-height:1.6">No listing fees, no monthly charges. We only take a commission when you make a sale.</p>
+    </div>
+    <div style="padding:24px;border:1px solid var(--dust);border-radius:12px">
+      <div style="font-size:32px;margin-bottom:12px">🚚</div>
+      <h3 style="font-family:'Cormorant Garamond',serif;font-size:18px;font-weight:400;margin-bottom:8px">Fulfillment Support</h3>
+      <p style="font-size:13px;color:var(--slate);line-height:1.6">We handle packaging, delivery, and customer service. You focus on creating.</p>
+    </div>
+    <div style="padding:24px;border:1px solid var(--dust);border-radius:12px">
+      <div style="font-size:32px;margin-bottom:12px">🌍</div>
+      <h3 style="font-family:'Cormorant Garamond',serif;font-size:18px;font-weight:400;margin-bottom:8px">Global Reach</h3>
+      <p style="font-size:13px;color:var(--slate);line-height:1.6">Sell to customers across Bangladesh and internationally. We handle COD, bKash, and card payments.</p>
+    </div>
+  </div>
+
+  <h2 style="font-family:'Cormorant Garamond',serif;font-size:24px;font-weight:300;margin-bottom:16px">How It Works</h2>
+  <div style="font-size:14px;line-height:1.8;color:var(--text);margin-bottom:40px">
+    <p><strong>1. Apply:</strong> Fill out the form below with your brand details.</p>
+    <p><strong>2. Review:</strong> Our team reviews your application within 48 hours.</p>
+    <p><strong>3. Onboard:</strong> Once approved, we'll help you set up your product listings.</p>
+    <p><strong>4. Sell:</strong> Start receiving orders. We handle the rest.</p>
+  </div>
+
+  <h2 style="font-family:'Cormorant Garamond',serif;font-size:24px;font-weight:300;margin-bottom:16px">Apply Now</h2>
+  <div style="background:var(--bg);border:1px solid var(--dust);border-radius:12px;padding:28px;max-width:600px">
+    <div style="margin-bottom:16px">
+      <label style="display:block;font-size:10px;letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px;color:var(--slate)">Brand Name *</label>
+      <input type="text" id="sellerBrand" style="width:100%;padding:10px 14px;border:1px solid var(--dust);border-radius:8px;font-size:13px;background:var(--bg);color:var(--text)" placeholder="Your brand name">
+    </div>
+    <div style="margin-bottom:16px">
+      <label style="display:block;font-size:10px;letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px;color:var(--slate)">Contact Name *</label>
+      <input type="text" id="sellerName" style="width:100%;padding:10px 14px;border:1px solid var(--dust);border-radius:8px;font-size:13px;background:var(--bg);color:var(--text)" placeholder="Your full name">
+    </div>
+    <div style="margin-bottom:16px">
+      <label style="display:block;font-size:10px;letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px;color:var(--slate)">Email *</label>
+      <input type="email" id="sellerEmail" style="width:100%;padding:10px 14px;border:1px solid var(--dust);border-radius:8px;font-size:13px;background:var(--bg);color:var(--text)" placeholder="you@brand.com">
+    </div>
+    <div style="margin-bottom:16px">
+      <label style="display:block;font-size:10px;letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px;color:var(--slate)">Phone *</label>
+      <input type="tel" id="sellerPhone" style="width:100%;padding:10px 14px;border:1px solid var(--dust);border-radius:8px;font-size:13px;background:var(--bg);color:var(--text)" placeholder="+880 17XX XXXXXX">
+    </div>
+    <div style="margin-bottom:16px">
+      <label style="display:block;font-size:10px;letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px;color:var(--slate)">Category *</label>
+      <select id="sellerCategory" style="width:100%;padding:10px 14px;border:1px solid var(--dust);border-radius:8px;font-size:13px;background:var(--bg);color:var(--text)">
+        <option>Dresses & Occasion Wear</option>
+        <option>Tops & Knitwear</option>
+        <option>Bottoms & Outerwear</option>
+        <option>Accessories & Jewellery</option>
+        <option>Ethnic & Embroidered Wear</option>
+        <option>Other</option>
+      </select>
+    </div>
+    <div style="margin-bottom:16px">
+      <label style="display:block;font-size:10px;letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px;color:var(--slate)">Tell us about your brand *</label>
+      <textarea id="sellerAbout" rows="4" style="width:100%;padding:10px 14px;border:1px solid var(--dust);border-radius:8px;font-size:13px;background:var(--bg);color:var(--text);resize:vertical" placeholder="Describe your brand, materials, and what makes you unique..."></textarea>
+    </div>
+    <div id="sellerError" style="font-size:12px;color:#E74C3C;margin-bottom:12px;display:none"></div>
+    <div id="sellerSuccess" style="font-size:12px;color:#27AE60;margin-bottom:12px;display:none"></div>
+    <button onclick="submitSellerApplication()" style="width:100%;padding:12px;background:var(--text);color:var(--bg);border:none;border-radius:8px;font-size:12px;font-weight:500;letter-spacing:.05em;cursor:pointer">Submit Application</button>
+  </div>
+</div>
+
+<script>
+async function submitSellerApplication() {
+  const brand = document.getElementById('sellerBrand').value.trim();
+  const name = document.getElementById('sellerName').value.trim();
+  const email = document.getElementById('sellerEmail').value.trim();
+  const phone = document.getElementById('sellerPhone').value.trim();
+  const category = document.getElementById('sellerCategory').value;
+  const about = document.getElementById('sellerAbout').value.trim();
+  const errorEl = document.getElementById('sellerError');
+  const successEl = document.getElementById('sellerSuccess');
+
+  if (!brand || !name || !email || !phone || !about) {
+    errorEl.textContent = 'Please fill in all required fields.';
+    errorEl.style.display = 'block';
+    successEl.style.display = 'none';
+    return;
+  }
+
+  // For MVP, just show success message
+  // In production, this would POST to /api/sellers/apply
+  errorEl.style.display = 'none';
+  successEl.textContent = '✓ Thank you! Your application has been submitted. We\'ll review it and get back to you within 48 hours.';
+  successEl.style.display = 'block';
+
+  // Clear form
+  document.getElementById('sellerBrand').value = '';
+  document.getElementById('sellerName').value = '';
+  document.getElementById('sellerEmail').value = '';
+  document.getElementById('sellerPhone').value = '';
+  document.getElementById('sellerAbout').value = '';
+}
+</script>
+</body>
+</html>

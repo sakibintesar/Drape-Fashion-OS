@@ -304,6 +304,21 @@ async function initDatabase() {
       CREATE INDEX IF NOT EXISTS idx_products_category ON products(category);
       CREATE INDEX IF NOT EXISTS idx_refresh_tokens_user_id ON refresh_tokens(user_id);
       CREATE INDEX IF NOT EXISTS idx_refresh_tokens_token ON refresh_tokens(token);
+
+      CREATE TABLE IF NOT EXISTS reviews (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        product_id INTEGER NOT NULL,
+        user_id INTEGER NOT NULL,
+        rating INTEGER NOT NULL CHECK(rating >= 1 AND rating <= 5),
+        title TEXT,
+        comment TEXT NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_reviews_product_id ON reviews(product_id);
+      CREATE INDEX IF NOT EXISTS idx_reviews_user_id ON reviews(user_id);
     `);
 
     // Add share_count column if missing (for existing databases)

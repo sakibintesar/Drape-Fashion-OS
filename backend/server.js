@@ -34,6 +34,7 @@ const aiRoutes = require('./routes/ai');
 const uploadRoutes = require('./routes/upload');
 const seoRoutes = require('./routes/seo');
 const newsletterRoutes = require('./routes/newsletter');
+const reviewRoutes = require('./routes/reviews');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -93,6 +94,9 @@ app.use('/', seoRoutes);
 
 // ── Newsletter Routes ──
 app.use('/api/newsletter', newsletterRoutes);
+
+// ── Review Routes ──
+app.use('/api/reviews', reviewRoutes);
 
 // ── Serve frontend ──
 const frontendPath = path.resolve(__dirname, '../frontend');
