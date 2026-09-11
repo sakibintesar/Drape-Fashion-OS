@@ -83,16 +83,23 @@ async function seed({ init = false } = {}) {
   }
 
   // ── Admin user ────────────────────────────────────────────────────────────
-  const existing = await get('SELECT id FROM users WHERE username = ?', ['admin']);
+  const existing = await get('SELECT id, password_hash FROM users WHERE username = ?', ['admin']);
+  const adminHash = await bcrypt.hash('drape2026', 12);
   if (!existing) {
-    const hash = await bcrypt.hash('drape2026', 12);
     await run(
       'INSERT INTO users (username, email, password_hash, role, fname, lname) VALUES (?, ?, ?, ?, ?, ?)',
-      ['admin', 'admin@drape.fashion', hash, 'admin', 'Admin', 'User']
+      ['admin', 'admin@drape.fashion', adminHash, 'admin', 'Admin', 'User']
     );
     console.log('Admin user created: admin / drape2026');
   } else {
-    console.log('Admin user already exists');
+    // Verify password hash is correct — fix if corrupted
+    const valid = await bcrypt.compare('drape2026', existing.password_hash);
+    if (!valid) {
+      await run('UPDATE users SET password_hash = ? WHERE username = ?', [adminHash, 'admin']);
+      console.log('Admin password hash was invalid — reset to admin / drape2026');
+    } else {
+      console.log('Admin user already exists');
+    }
   }
 
   // ── Demo customers ────────────────────────────────────────────────────────
@@ -114,8 +121,9 @@ async function seed({ init = false } = {}) {
   }
 
   // ── Products ──────────────────────────────────────────────────────────────
-  const productCount = await get('SELECT COUNT(*)::int as count FROM products');
-  if (productCount.count === 0) {
+  const productCount = await get('SELECT COUNT(*) as count FROM products');
+  const count = typeof productCount?.count === 'string' ? parseInt(productCount.count, 10) : (productCount?.count || 0);
+  if (count === 0) {
     for (const p of products) {
       await run(
         `INSERT INTO products (id, name, category, vendor, price, orig_price, stock, emoji, colors_json, sizes_json, description, badge, sold, material, care, origin, subs_json)
