@@ -8,7 +8,6 @@ window.addEventListener('DOMContentLoaded', async () => {
   loadState();
   await checkCustomerSession();
   await loadProductsFromAPI();
-  initWaChats();
   renderAll();
 
   // Initialize premium landing page
@@ -43,7 +42,7 @@ function showPage(n) {
   if (n === 'checkout') renderCoSummary();
   if (n === 'catalog') renderCatalog('all');
   if (n === 'social') showSocialPage('overview', document.querySelector('.social-nav-btn'));
-  if (n === 'whatsapp') { if (waChats.length === 0) initWaChats(); }
+  if (n === 'whatsapp') { /* admin-only — not available on customer frontend */ }
   if (n === 'track') { /* static */ }
   if (n === 'account') renderAccountPage();
   document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));

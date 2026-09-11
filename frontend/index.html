@@ -39,7 +39,7 @@
     <button class="nav-link" onclick="location.href='/about.html'">Story</button>
     <button class="nav-link" onclick="showPage('track')">Track</button>
     <button class="nav-link" onclick="showPage('social')">📱 Social</button>
-    <button class="nav-link" onclick="showPage('whatsapp')">💬 WhatsApp</button>
+    <button class="nav-link" onclick="showPage('account')">👤 Account</button>
   </div>
   <div style="display:flex;align-items:center;gap:10px;">
     <button class="theme-toggle" onclick="toggleTheme()" title="Toggle dark mode">🌙</button>
@@ -59,7 +59,7 @@
     <button class="mobile-nav-btn" onclick="showPage('about');closeMobileNav()">Story</button>
     <button class="mobile-nav-btn" onclick="showPage('track');closeMobileNav()">Track Order</button>
     <button class="mobile-nav-btn" onclick="showPage('social');closeMobileNav()">📱 Social</button>
-    <button class="mobile-nav-btn" onclick="showPage('whatsapp');closeMobileNav()">💬 WhatsApp</button>
+    <button class="mobile-nav-btn" onclick="showPage('account');closeMobileNav()">👤 My Account</button>
     <div style="height:1px;background:var(--dust);margin:12px 0"></div>
     <button class="mobile-nav-btn" onclick="toggleCart();closeMobileNav()">🛍 Your Bag</button>
     <button class="mobile-nav-btn" onclick="toggleTheme();closeMobileNav()">🌙 Toggle Dark Mode</button>
@@ -459,26 +459,6 @@
   </div>
 </div>
 
-<!-- WHATSAPP -->
-<div class="page" id="page-whatsapp">
-  <div class="wa-layout">
-    <div class="wa-sidebar">
-      <div class="wa-sidebar-header">
-        <span style="font-size:24px">💬</span>
-        <div><div class="wa-sidebar-title">DRAPE Business</div><div style="font-size:10px;opacity:.8">WhatsApp Business</div></div>
-      </div>
-      <div class="wa-search"><input placeholder="Search conversations..." oninput="filterWaChats(this.value)" id="waSearch"></div>
-      <div class="wa-chat-list" id="waChatList"></div>
-    </div>
-    <div id="waMain">
-      <div class="wa-empty">
-        <div class="wa-empty-icon">💬</div>
-        <div style="font-family:'Cormorant Garamond',serif;font-size:20px;font-weight:300">Select a conversation</div>
-      </div>
-    </div>
-  </div>
-</div>
-
 <!-- ORDER TRACKING -->
 <div class="page" id="page-track">
   <div class="track-layout">
@@ -721,7 +701,6 @@
 <script src="js/cart.js"></script>
 <script src="js/checkout.js"></script>
 <script src="js/social.js"></script>
-<script src="js/whatsapp.js"></script>
 <script src="js/tracking.js"></script>
 <script src="js/share.js"></script>
 <script src="js/referral.js"></script>
