@@ -149,7 +149,7 @@ function updateCustomerAuthUI() {
 function showCustomerAuth() {
   const modal = document.getElementById('customerAuthModal');
   if (modal) {
-    modal.classList.add('show');
+    modal.classList.add('open');
     if (customerUser) {
       document.getElementById('authLoginForm').style.display = 'none';
       document.getElementById('authRegisterForm').style.display = 'none';
@@ -167,7 +167,7 @@ function closeCustomerAuth(e) {
 }
 function closeCustomerAuthDirect() {
   const modal = document.getElementById('customerAuthModal');
-  if (modal) modal.classList.remove('show');
+  if (modal) modal.classList.remove('open');
 }
 function showLoginForm() {
   document.getElementById('authLoginForm').style.display = '';
