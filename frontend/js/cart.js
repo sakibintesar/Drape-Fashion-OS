@@ -8,7 +8,7 @@ function pCard(p) {
   const bc = p.stock === 0 ? 'badge-out' : (p.origPrice ? 'badge-sale' : '');
   return `<div class="product-card" onclick="openModal(${p.id})">
     ${bt ? `<div class="product-badge ${bc}">${escapeHtml(bt)}</div>` : ''}
-    <div class="product-img">${p.image_url ? `<img src="${escapeHtml(p.image_url)}" style="width:100%;height:100%;object-fit:cover" alt="${escapeHtml(p.name)}">` : p.emoji}</div>
+    <div class="product-img">${p.image_url ? `<img src="${escapeHtml(p.image_url)}" loading="lazy" onload="this.classList.add('loaded')" style="width:100%;height:100%;object-fit:cover" alt="${escapeHtml(p.name)}">` : p.emoji}</div>
     <div class="product-overlay"><button class="overlay-btn">Quick View</button></div>
     <div class="product-info">
       <div class="product-category">${escapeHtml(p.category)}</div>
