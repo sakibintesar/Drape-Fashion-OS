@@ -61,13 +61,6 @@ function closeMobileNav(e) {
   }
 }
 
-// ─── BANNER ───
-function dismissBanner() {
-  const banner = document.getElementById('demoBanner');
-  if (banner) banner.style.display = 'none';
-  localStorage.setItem('drape_banner_dismissed', '1');
-}
-
 // ─── API HELPERS ───
 async function loadProductsFromAPI() {
   // Show loading state in shop grid
@@ -128,7 +121,6 @@ window.saveState = saveState;
 window.toggleTheme = toggleTheme;
 window.openMobileNav = openMobileNav;
 window.closeMobileNav = closeMobileNav;
-window.dismissBanner = dismissBanner;
 window.loadProductsFromAPI = loadProductsFromAPI;
 window.trackOrderAPI = trackOrderAPI;
 window.createOrderAPI = createOrderAPI;

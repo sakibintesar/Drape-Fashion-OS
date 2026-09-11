@@ -3,11 +3,30 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>DRAPE — Fashion OS v4</title>
+<title>DRAPE — Curated Fashion from Dhaka's Finest Artisan Brands</title>
+<meta name="description" content="Shop curated fashion from five specialist artisan brands in Dhaka. Sustainable, handcrafted clothing with worldwide delivery. COD available in Bangladesh.">
+<meta name="keywords" content="fashion, Bangladesh, Dhaka, artisan, sustainable, handmade, clothing, dresses, tops, accessories">
+
+<!-- Open Graph / Facebook -->
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://drape-fashion-os.onrender.com/">
+<meta property="og:title" content="DRAPE — Curated Fashion from Dhaka's Finest Artisan Brands">
+<meta property="og:description" content="Shop curated fashion from five specialist artisan brands in Dhaka. Sustainable, handcrafted clothing with worldwide delivery.">
+<meta property="og:image" content="https://drape-fashion-os.onrender.com/og-image.png">
+
+<!-- Twitter -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:url" content="https://drape-fashion-os.onrender.com/">
+<meta name="twitter:title" content="DRAPE — Curated Fashion from Dhaka's Finest Artisan Brands">
+<meta name="twitter:description" content="Shop curated fashion from five specialist artisan brands in Dhaka. Sustainable, handcrafted clothing with worldwide delivery.">
+<meta name="twitter:image" content="https://drape-fashion-os.onrender.com/og-image.png">
+
+<!-- Canonical -->
+<link rel="canonical" href="https://drape-fashion-os.onrender.com/">
+
 <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-<div class="demo-banner" id="demoBanner">🚧 This is a demo / MVP. Not for production use. For admin access, open <a href="admin.html">admin.html</a> · <a href="README.md">Read security notes</a> · <button onclick="dismissBanner()" style="background:none;border:none;color:#856404;cursor:pointer;font-size:12px;margin-left:8px;text-decoration:underline">Dismiss</button></div>
 <div id="toast"></div>
 
 <nav>
@@ -17,7 +36,7 @@
     <button class="nav-link" onclick="showPage('shop')">Shop</button>
     <button class="nav-link" onclick="showPage('catalog')">Catalog</button>
     <button class="nav-link" onclick="showPage('brands')">Brands</button>
-    <button class="nav-link" onclick="showPage('about')">Story</button>
+    <button class="nav-link" onclick="location.href='/about.html'">Story</button>
     <button class="nav-link" onclick="showPage('track')">Track</button>
     <button class="nav-link" onclick="showPage('social')">📱 Social</button>
     <button class="nav-link" onclick="showPage('whatsapp')">💬 WhatsApp</button>
@@ -614,6 +633,52 @@
     </div>
   </div>
 </div>
+
+<!-- FOOTER -->
+<footer class="site-footer">
+  <div class="footer-content">
+    <div class="footer-brand">
+      <div class="footer-logo">DR<span>A</span>PE</div>
+      <p class="footer-tagline">Curated fashion from Dhaka's finest artisan brands. Sustainable, handcrafted, built to last.</p>
+      <div class="footer-social">
+        <a href="https://instagram.com/drapefashion" target="_blank" rel="noopener" aria-label="Instagram">📸</a>
+        <a href="https://facebook.com/drapefashion" target="_blank" rel="noopener" aria-label="Facebook">👥</a>
+        <a href="https://tiktok.com/@drapefashion" target="_blank" rel="noopener" aria-label="TikTok">🎵</a>
+        <a href="https://wa.me/8801700000000" target="_blank" rel="noopener" aria-label="WhatsApp">💬</a>
+      </div>
+    </div>
+    <div class="footer-links">
+      <div class="footer-col">
+        <h4>Shop</h4>
+        <a href="#" onclick="showPage('shop')">All Products</a>
+        <a href="#" onclick="showPage('catalog')">Catalog</a>
+        <a href="#" onclick="showPage('brands')">Our Brands</a>
+        <a href="#" onclick="filterP('__sale__',null)">Sale</a>
+      </div>
+      <div class="footer-col">
+        <h4>Help</h4>
+        <a href="/shipping.html">Shipping Policy</a>
+        <a href="/returns.html">Returns & Exchanges</a>
+        <a href="/about.html">About DRAPE</a>
+        <a href="#" onclick="showPage('track')">Track Order</a>
+      </div>
+      <div class="footer-col">
+        <h4>Contact</h4>
+        <a href="mailto:hello@drape.fashion">hello@drape.fashion</a>
+        <a href="https://wa.me/8801700000000">WhatsApp Us</a>
+        <p class="footer-address">House 12, Road 5<br>Gulshan 1, Dhaka 1212<br>Bangladesh</p>
+      </div>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <p>&copy; 2026 DRAPE. All rights reserved.</p>
+    <div class="footer-bottom-links">
+      <a href="/shipping.html">Shipping</a>
+      <a href="/returns.html">Returns</a>
+      <a href="/about.html">About</a>
+    </div>
+  </div>
+</footer>
 
 <script src="js/state.js"></script>
 <script src="js/utils.js"></script>

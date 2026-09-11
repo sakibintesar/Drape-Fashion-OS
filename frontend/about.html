@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>About DRAPE — Our Story</title>
+<meta name="description" content="DRAPE was founded in Dhaka with one belief: South Asian fashion deserves a global standard of craft. Learn about our mission and artisan partners.">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<nav>
+  <div class="nav-logo" onclick="location.href='/'">DR<span>A</span>PE</div>
+  <div class="nav-links">
+    <button class="nav-link" onclick="location.href='/'">Home</button>
+    <button class="nav-link" onclick="location.href='/?page=shop'">Shop</button>
+    <button class="nav-link" onclick="location.href='/?page=brands'">Brands</button>
+  </div>
+  <div style="display:flex;align-items:center;gap:10px;">
+    <button class="theme-toggle" onclick="toggleTheme()" title="Toggle dark mode">🌙</button>
+    <button class="mobile-menu-btn" onclick="openMobileNav()">☰</button>
+  </div>
+</nav>
+
+<div class="page active" style="max-width:900px;margin:0 auto;padding:40px 24px">
+  <h1 class="display" style="margin-bottom:8px">Built in Dhaka,<br>worn everywhere.</h1>
+  <p style="font-size:14px;color:var(--slate);margin-bottom:40px;max-width:600px;line-height:1.7">DRAPE was founded with one belief: South Asian fashion deserves a global standard of craft. We partner with five specialist artisan brands to bring you curated, sustainable fashion.</p>
+
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:24px;margin-bottom:48px">
+    <div style="padding:24px;border:1px solid var(--dust);border-radius:12px">
+      <div style="font-size:32px;margin-bottom:12px">🧵</div>
+      <h3 style="font-family:'Cormorant Garamond',serif;font-size:18px;font-weight:400;margin-bottom:8px">Craft First</h3>
+      <p style="font-size:13px;color:var(--slate);line-height:1.6">Every garment passes through 14 quality checkpoints. We work with artisans who've spent decades mastering their technique.</p>
+    </div>
+    <div style="padding:24px;border:1px solid var(--dust);border-radius:12px">
+      <div style="font-size:32px;margin-bottom:12px">🌿</div>
+      <h3 style="font-family:'Cormorant Garamond',serif;font-size:18px;font-weight:400;margin-bottom:8px">Responsible Materials</h3>
+      <p style="font-size:13px;color:var(--slate);line-height:1.6">70% of our fabrics are GOTS-certified organic or recycled. On track for 100% by 2027.</p>
+    </div>
+    <div style="padding:24px;border:1px solid var(--dust);border-radius:12px">
+      <div style="font-size:32px;margin-bottom:12px">🤝</div>
+      <h3 style="font-family:'Cormorant Garamond',serif;font-size:18px;font-weight:400;margin-bottom:8px">5 Brand Partners</h3>
+      <p style="font-size:13px;color:var(--slate);line-height:1.6">Five specialist artisan brands under one roof — each a category expert, all held to the same ethical standard.</p>
+    </div>
+  </div>
+
+  <h2 style="font-family:'Cormorant Garamond',serif;font-size:24px;font-weight:300;margin-bottom:16px">Our Mission</h2>
+  <p style="font-size:14px;line-height:1.8;color:var(--text);margin-bottom:24px">We believe that fashion should be transparent, sustainable, and fair. Every DRAPE product tells a story — from the artisan who crafted it to the materials used. We work directly with small-batch producers across Bangladesh, ensuring fair wages and sustainable practices.</p>
+
+  <h2 style="font-family:'Cormorant Garamond',serif;font-size:24px;font-weight:300;margin-bottom:16px">Where We Ship</h2>
+  <p style="font-size:14px;line-height:1.8;color:var(--text);margin-bottom:24px">We deliver across Bangladesh with Cash on Delivery available nationwide. International shipping is available to 50+ countries with delivery in 7-14 business days.</p>
+
+  <h2 style="font-family:'Cormorant Garamond',serif;font-size:24px;font-weight:300;margin-bottom:16px">Get in Touch</h2>
+  <p style="font-size:14px;line-height:1.8;color:var(--text)">
+    <strong>Email:</strong> <a href="mailto:hello@drape.fashion" style="color:var(--accent)">hello@drape.fashion</a><br>
+    <strong>WhatsApp:</strong> <a href="https://wa.me/8801700000000" style="color:var(--accent)">+880 1700 000000</a><br>
+    <strong>Address:</strong> House 12, Road 5, Gulshan 1, Dhaka 1212, Bangladesh
+  </p>
+</div>
+
+<script src="js/utils.js"></script>
+</body>
+</html>

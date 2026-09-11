@@ -6,10 +6,6 @@
 // ─── INIT ───
 window.addEventListener('DOMContentLoaded', async () => {
   loadState();
-  // Conditionally hide demo banner
-  const bannerDismissed = localStorage.getItem('drape_banner_dismissed');
-  const banner = document.getElementById('demoBanner');
-  if (bannerDismissed && banner) banner.style.display = 'none';
   await checkCustomerSession();
   await loadProductsFromAPI();
   initWaChats();
