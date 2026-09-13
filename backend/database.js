@@ -254,6 +254,12 @@ async function initDatabase() {
         care TEXT,
         origin TEXT,
         subs_json TEXT,
+        image_url TEXT,
+        share_count INTEGER DEFAULT 0,
+        seo_title TEXT,
+        seo_description TEXT,
+        seo_keywords TEXT,
+        slug TEXT,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
@@ -341,6 +347,32 @@ async function initDatabase() {
 
       CREATE INDEX IF NOT EXISTS idx_referrals_code ON referrals(code);
       CREATE INDEX IF NOT EXISTS idx_referral_events_code ON referral_events(referral_code);
+
+      CREATE TABLE IF NOT EXISTS social_connections (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        platform TEXT NOT NULL UNIQUE,
+        access_token TEXT NOT NULL,
+        refresh_token TEXT,
+        expires_at TIMESTAMP,
+        platform_user_id TEXT,
+        page_id TEXT,
+        connected_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+
+      CREATE TABLE IF NOT EXISTS social_posts (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        platform TEXT NOT NULL,
+        content TEXT NOT NULL,
+        media_url TEXT,
+        platform_post_id TEXT,
+        status TEXT DEFAULT 'pending',
+        posted_at TIMESTAMP,
+        error TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_social_posts_platform ON social_posts(platform);
+      CREATE INDEX IF NOT EXISTS idx_social_posts_status ON social_posts(status);
     `);
 
     // Add share_count column if missing (for existing databases)
@@ -348,6 +380,72 @@ async function initDatabase() {
       sqliteDb.exec(`ALTER TABLE products ADD COLUMN share_count INTEGER DEFAULT 0`);
     } catch (e) {
       // Column already exists — ignore
+    }
+
+    // ── Newsletter subscribers (persistent, replaces in-memory Map) ──
+    sqliteDb.exec(`
+      CREATE TABLE IF NOT EXISTS newsletter_subscribers (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        email TEXT NOT NULL UNIQUE,
+        source TEXT DEFAULT 'popup',
+        subscribed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+
+    // ── Influencer collaboration applications ──
+    sqliteDb.exec(`
+      CREATE TABLE IF NOT EXISTS influencer_applications (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        handle TEXT NOT NULL,
+        platform TEXT NOT NULL,
+        followers TEXT,
+        niche TEXT,
+        message TEXT,
+        status TEXT DEFAULT 'pending',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+
+    // ── FTS5 full-text search index for products ──
+    // Uses content-sync triggers so the index stays in sync automatically.
+    try {
+      sqliteDb.exec(`
+        CREATE VIRTUAL TABLE IF NOT EXISTS products_fts USING fts5(
+          name, category, vendor, description,
+          content=products,
+          content_rowid=id
+        );
+
+        -- Triggers to keep FTS index in sync with products table
+        CREATE TRIGGER IF NOT EXISTS products_ai AFTER INSERT ON products BEGIN
+          INSERT INTO products_fts(rowid, name, category, vendor, description)
+          VALUES (new.id, new.name, new.category, new.vendor, new.description);
+        END;
+
+        CREATE TRIGGER IF NOT EXISTS products_ad AFTER DELETE ON products BEGIN
+          INSERT INTO products_fts(products_fts, rowid, name, category, vendor, description)
+          VALUES('delete', old.id, old.name, old.category, old.vendor, old.description);
+        END;
+
+        CREATE TRIGGER IF NOT EXISTS products_au AFTER UPDATE ON products BEGIN
+          INSERT INTO products_fts(products_fts, rowid, name, category, vendor, description)
+          VALUES('delete', old.id, old.name, old.category, old.vendor, old.description);
+          INSERT INTO products_fts(rowid, name, category, vendor, description)
+          VALUES (new.id, new.name, new.category, new.vendor, new.description);
+        END;
+      `);
+
+      // Rebuild FTS index from existing products (for first-time migration)
+      const productCount = sqliteDb.prepare('SELECT COUNT(*) as cnt FROM products').get();
+      const ftsCount = sqliteDb.prepare('SELECT COUNT(*) as cnt FROM products_fts').get();
+      if (productCount.cnt > 0 && ftsCount.cnt === 0) {
+        sqliteDb.exec(`INSERT INTO products_fts(products_fts, rowid, name, category, vendor, description)
+          SELECT 'rebuild', id, name, category, vendor, description FROM products`);
+        console.log('[database] FTS5 index rebuilt from existing products');
+      }
+    } catch (e) {
+      console.warn('[database] FTS5 setup skipped (may not be supported):', e.message);
     }
   }
 }

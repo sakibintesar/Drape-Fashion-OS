@@ -6,8 +6,10 @@
 function pCard(p) {
   const bt = p.stock === 0 ? 'Sold Out' : (p.origPrice ? 'Sale' : (p.badge || ''));
   const bc = p.stock === 0 ? 'badge-out' : (p.origPrice ? 'badge-sale' : '');
+  const isWl = typeof isWishlisted === 'function' && isWishlisted(p.id);
   return `<div class="product-card" onclick="openModal(${p.id})">
     ${bt ? `<div class="product-badge ${bc}">${escapeHtml(bt)}</div>` : ''}
+    <button class="wishlist-heart ${isWl ? 'active' : ''}" onclick="event.stopPropagation();toggleWishlist(${p.id})" title="${isWl ? 'Remove from wishlist' : 'Add to wishlist'}">${isWl ? '❤️' : '🤍'}</button>
     <div class="product-img">${p.image_url ? `<img src="${escapeHtml(p.image_url)}" loading="lazy" onload="this.classList.add('loaded')" style="width:100%;height:100%;object-fit:cover" alt="${escapeHtml(p.name)}">` : p.emoji}</div>
     <div class="product-overlay"><button class="overlay-btn">Quick View</button></div>
     <div class="product-info">
@@ -43,6 +45,42 @@ function subCard(p) {
 function openModal(id) {
   selProd = products.find(p => p.id === id); if (!selProd) return;
   selColor = null; selSize = null; mQty = 1;
+  // Track recently viewed
+  if (typeof trackRecentlyViewed === 'function') trackRecentlyViewed(id);
+  // Update modal wishlist state
+  const isWl = typeof isWishlisted === 'function' && isWishlisted(id);
+  const wlBtn = document.getElementById('modalWishlistBtn');
+  if (wlBtn) wlBtn.innerHTML = isWl ? '❤️' : '🤍';
+
+  // Breadcrumb
+  const bc = document.getElementById('modalBreadcrumbCat');
+  if (bc) bc.textContent = selProd.category;
+
+  // Stock indicator
+  const si = document.getElementById('modalStockIndicator');
+  if (si) {
+    if (selProd.stock === 0) {
+      si.innerHTML = '<span class="stock-out-badge">Out of Stock</span>';
+    } else if (selProd.stock <= 5) {
+      si.innerHTML = `<span class="stock-low-badge">Only ${selProd.stock} Left</span>`;
+    } else {
+      si.innerHTML = '<span class="stock-in-badge">In Stock</span>';
+    }
+  }
+
+  // Complete the Look — show complementary products
+  renderCompleteTheLook(selProd);
+
+  // Share buttons
+  const sha = document.getElementById('shareButtonsArea');
+  if (sha) {
+    const productUrl = window.location.origin + '?product=' + selProd.id;
+    sha.innerHTML = `<div class="share-buttons" style="margin-top:16px">
+      <button class="share-btn whatsapp" onclick="window.open('https://wa.me/?text=${encodeURIComponent(selProd.name + ' - ৳' + selProd.price + ' ' + productUrl)}','_blank')">📱 WhatsApp</button>
+      <button class="share-btn facebook" onclick="window.open('https://www.facebook.com/sharer/sharer.php?u=' + encodeURIComponent(productUrl),'_blank')">📘 Facebook</button>
+      <button class="share-btn copy" onclick="navigator.clipboard.writeText('${productUrl}');showToast('Link copied!','success')">📋 Copy Link</button>
+    </div>`;
+  }
   const mi = document.getElementById('modalImg');
   if (mi) mi.innerHTML = selProd.image_url ? `<img src="${escapeHtml(selProd.image_url)}" style="max-width:100%;max-height:320px;object-fit:contain;border-radius:8px" alt="${escapeHtml(selProd.name)}">` : `<span style="font-size:88px">${selProd.emoji}</span>`;
   const mc = document.getElementById('modalCat');
@@ -126,6 +164,9 @@ function updateCartUI() {
   const count = cart.reduce((s, i) => s + i.qty, 0);
   const cc = document.getElementById('cartCount');
   if (cc) cc.textContent = count;
+  // Sync mobile bottom nav cart count
+  const mcc = document.getElementById('mobileCartCount');
+  if (mcc) mcc.textContent = count;
   const con = document.getElementById('cartItems'), foot = document.getElementById('cartFooter');
   if (!cart.length) {
     if (con) con.innerHTML = `<div class="cart-empty"><div style="font-size:38px;opacity:.3">🛍</div><div style="font-size:12px">Your bag is empty.</div><button class="btn-primary" style="margin-top:7px;font-size:10px" onclick="toggleCart();showPage('shop')">Shop Now</button></div>`;
@@ -143,6 +184,38 @@ function updateCartUI() {
   if (foot) foot.style.display = 'block';
 }
 function toggleCart() { const cd = document.getElementById('cartDrawer'); if (cd) cd.classList.toggle('open'); }
+
+function renderCompleteTheLook(product) {
+  const el = document.getElementById('completeTheLook');
+  const grid = document.getElementById('completeGrid');
+  if (!el || !grid) return;
+  // Get complementary products: same category but different, or from same vendor
+  const complements = products
+    .filter(p => p.id !== product.id && p.stock > 0)
+    .sort((a, b) => {
+      let scoreA = 0, scoreB = 0;
+      if (a.category === product.category) scoreA += 3;
+      if (b.category === product.category) scoreB += 3;
+      if (a.vendor === product.vendor) scoreA += 1;
+      if (b.vendor === product.vendor) scoreB += 1;
+      return scoreB - scoreA;
+    })
+    .slice(0, 4);
+  if (complements.length === 0) { el.style.display = 'none'; return; }
+  el.style.display = 'block';
+  grid.innerHTML = complements.map(pCard).join('');
+}
+
+function openSizeGuide() {
+  const el = document.getElementById('sizeGuideModal');
+  if (el) { el.classList.add('open'); document.body.style.overflow = 'hidden'; }
+}
+
+function closeSizeGuide() {
+  const el = document.getElementById('sizeGuideModal');
+  if (el) { el.classList.remove('open'); document.body.style.overflow = ''; }
+}
+
 function goCheckout() {
   if (!cart.length) return;
   toggleCart();
@@ -181,4 +254,7 @@ window.addToCart = addToCart;
 window.removeFromCart = removeFromCart;
 window.updateCartUI = updateCartUI;
 window.toggleCart = toggleCart;
+window.renderCompleteTheLook = renderCompleteTheLook;
+window.openSizeGuide = openSizeGuide;
+window.closeSizeGuide = closeSizeGuide;
 window.goCheckout = goCheckout;

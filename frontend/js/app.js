@@ -29,6 +29,14 @@ window.addEventListener('DOMContentLoaded', async () => {
   setTimeout(() => {
     if (typeof showNewsletterPopup === 'function') showNewsletterPopup();
   }, 30000);
+
+  // Close sort dropdown on outside click
+  document.addEventListener('click', (e) => {
+    const wrapper = document.querySelector('.shop-sort-wrapper');
+    if (wrapper && !wrapper.contains(e.target)) {
+      wrapper.classList.remove('open');
+    }
+  });
 });
 
 // ─── NAVIGATION ───
@@ -67,6 +75,10 @@ function showCat(sec, btn) {
 function showSocialPage(name, btn) {
   document.querySelectorAll('.social-page').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.social-nav-btn').forEach(b => b.classList.remove('active'));
+  // Also sync mobile tabs
+  document.querySelectorAll('.social-mobile-tab').forEach(b => {
+    b.classList.toggle('active', b.dataset.social === name);
+  });
   const page = document.getElementById('social-' + name);
   if (page) page.classList.add('active');
   if (btn) btn.classList.add('active');
@@ -76,10 +88,13 @@ function showSocialPage(name, btn) {
   if (name === 'tiktok') renderPlatformPosts('tiktok', 'ttPostsGrid');
   if (name === 'linkedin') renderPlatformPosts('linkedin', 'liPostsGrid');
   if (name === 'scheduler') renderSchedule();
+  // Scroll mobile tab into view
+  const activeTab = document.querySelector('.social-mobile-tab.active');
+  if (activeTab) activeTab.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
 }
 
 // ─── RENDERING ───
-function renderAll() { renderFeatured(); renderShopGrid(products); }
+function renderAll() { renderFeatured(); renderShopGrid(products); updateWishlistUI(); renderRecentlyViewed(); updateMobileNavActive(); renderEditorsPicks(); }
 
 function renderFeatured() {
   const el = document.getElementById('featuredGrid');
@@ -89,10 +104,92 @@ function renderFeatured() {
 }
 
 function renderShopGrid(list) {
+  const sorted = sortProducts(list, shopSort);
   const el = document.getElementById('shopGrid');
-  if (el) el.innerHTML = list.length ? list.map(pCard).join('') : '<div style="padding:56px;color:var(--slate)">No products found.</div>';
+  if (el) el.innerHTML = sorted.length ? sorted.map(pCard).join('') : '<div style="padding:56px;color:var(--slate)">No products found.</div>';
   const pc = document.getElementById('productCount');
-  if (pc) pc.textContent = list.length + ' pieces';
+  if (pc) pc.textContent = sorted.length + ' pieces';
+}
+
+function renderRecentlyViewed() {
+  const el = document.getElementById('recentlyViewed');
+  if (!el) return;
+  const items = getRecentlyViewedProducts();
+  if (items.length === 0) { el.parentElement.style.display = 'none'; return; }
+  el.parentElement.style.display = 'block';
+  el.innerHTML = items.map(pCard).join('');
+}
+
+function sortShop(method) {
+  shopSort = method;
+  const sortLabel = document.getElementById('sortLabel');
+  const labels = { 'default': 'Sort', 'newest': 'Newest', 'price-asc': 'Price ↑', 'price-desc': 'Price ↓', 'bestselling': 'Bestselling' };
+  if (sortLabel) sortLabel.textContent = labels[method] || 'Sort';
+  const activeFilter = document.querySelector('.filter-btn.active');
+  if (activeFilter) {
+    const cat = activeFilter.textContent.trim();
+    filterP(cat === 'All' ? 'All' : cat === 'Sale' ? '__sale__' : cat, null);
+  } else {
+    renderShopGrid(products);
+  }
+}
+
+function openQuickView(productId, event) {
+  if (event) event.stopPropagation();
+  openModal(productId);
+}
+
+// ─── EDITOR'S PICKS ───
+function renderEditorsPicks() {
+  const el = document.getElementById('editorsPicksGrid');
+  if (!el) return;
+  // Curate picks: high sold + new arrivals + variety of categories
+  const picks = [...products]
+    .filter(p => p.stock > 0)
+    .sort((a, b) => (b.sold || 0) - (a.sold || 0))
+    .slice(0, 4);
+  el.innerHTML = picks.map(p => `
+    <div class="editors-pick-card" onclick="openModal(${p.id})">
+      <div class="editors-pick-img">
+        ${p.image_url ? `<img src="${escapeHtml(p.image_url)}" loading="lazy" onload="this.classList.add('loaded')" alt="${escapeHtml(p.name)}">` : `<span style="font-size:48px">${p.emoji}</span>`}
+      </div>
+      <div class="editors-pick-info">
+        <span class="editors-pick-cat">${escapeHtml(p.category)}</span>
+        <span class="editors-pick-name">${escapeHtml(p.name)}</span>
+        <span class="editors-pick-price mono">৳${p.price.toLocaleString()}</span>
+      </div>
+    </div>
+  `).join('');
+}
+
+// ─── MOBILE BOTTOM NAV ───
+function updateMobileNavActive() {
+  const pages = ['home', 'shop', 'wishlist', 'cart', 'account'];
+  const activePage = document.querySelector('.page.active')?.id?.replace('page-', '') || 'home';
+  document.querySelectorAll('.mobile-bottom-nav .mbn-item').forEach(item => {
+    item.classList.toggle('active', item.dataset.page === activePage);
+  });
+}
+
+function showPageMobile(page) {
+  if (page === 'wishlist') {
+    showPage('shop');
+    setTimeout(() => renderWishlistPage(), 100);
+    return;
+  }
+  if (page === 'cart') {
+    toggleCart();
+    return;
+  }
+  showPage(page);
+}
+
+function renderWishlistPage() {
+  const el = document.getElementById('shopGrid');
+  const pc = document.getElementById('productCount');
+  const wlProducts = products.filter(p => wishlist.includes(p.id));
+  if (el) el.innerHTML = wlProducts.length ? wlProducts.map(pCard).join('') : '<div style="padding:56px;color:var(--slate);text-align:center"><div style="font-size:48px;margin-bottom:16px;opacity:.3">❤️</div>Your wishlist is empty.<br><br><button class="btn-primary" onclick="showPage(\'shop\')">Browse Collection</button></div>';
+  if (pc) pc.textContent = wlProducts.length ? wlProducts.length + ' saved items' : 'Wishlist';
 }
 
 function filterP(cat, btn) {
@@ -152,6 +249,68 @@ function renderCatalog(sec) {
   }
 }
 
+// ─── PRODUCT SEARCH ───
+let _searchTimeout = null;
+let _searchActive = false;
+
+function onSearchInput(val) {
+  const clearBtn = document.getElementById('searchClear');
+  if (clearBtn) clearBtn.style.display = val.trim() ? 'block' : 'none';
+  clearTimeout(_searchTimeout);
+  if (!val.trim()) { clearSearch(); return; }
+  _searchTimeout = setTimeout(() => executeSearch(val), 300);
+}
+
+async function executeSearch(query) {
+  const q = (query || '').trim();
+  const clearBtn = document.getElementById('searchClear');
+  if (!q) { clearSearch(); return; }
+  if (clearBtn) clearBtn.style.display = 'block';
+
+  // Sync mobile search input
+  const msi = document.getElementById('mobileSearchInput');
+  if (msi) msi.value = q;
+  const si = document.getElementById('searchInput');
+  if (si) si.value = q;
+
+  // Navigate to shop page and show loading
+  _searchActive = true;
+  const page = document.getElementById('page-shop');
+  if (page) { document.querySelectorAll('.page').forEach(p => p.classList.remove('active')); page.classList.add('active'); }
+  window.scrollTo(0, 0);
+  document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+  const shopLink = document.querySelector('.nav-link[onclick*="showPage(\'shop\')"]');
+  if (shopLink) shopLink.classList.add('active');
+
+  const el = document.getElementById('shopGrid');
+  if (el) el.innerHTML = '<div style="padding:56px;color:var(--slate)">Searching...</div>';
+
+  try {
+    const res = await fetch('/api/products/search?q=' + encodeURIComponent(q));
+    const data = await res.json();
+    const list = data.products || [];
+    if (el) el.innerHTML = list.length ? list.map(pCard).join('') : `<div style="padding:56px;color:var(--slate)">No results for "${escapeHtml(q)}"</div>`;
+    const pc = document.getElementById('productCount');
+    if (pc) pc.textContent = list.length + ` result${list.length !== 1 ? 's' : ''} for "${q}"`;
+  } catch (err) {
+    console.error('[DRAPE] Search error:', err);
+    if (el) el.innerHTML = '<div style="padding:56px;color:var(--slate)">Search failed. Please try again.</div>';
+  }
+}
+
+function clearSearch() {
+  _searchActive = false;
+  const si = document.getElementById('searchInput');
+  if (si) si.value = '';
+  const msi = document.getElementById('mobileSearchInput');
+  if (msi) msi.value = '';
+  const clearBtn = document.getElementById('searchClear');
+  if (clearBtn) clearBtn.style.display = 'none';
+  renderShopGrid(products);
+  const pc = document.getElementById('productCount');
+  if (pc) pc.textContent = products.length + ' pieces';
+}
+
 // ── EXPORT TO WINDOW ──
 window.showPage = showPage;
 window.showBrand = showBrand;
@@ -160,5 +319,13 @@ window.showSocialPage = showSocialPage;
 window.renderAll = renderAll;
 window.renderFeatured = renderFeatured;
 window.renderShopGrid = renderShopGrid;
+window.renderRecentlyViewed = renderRecentlyViewed;
+window.sortShop = sortShop;
+window.openQuickView = openQuickView;
+window.showPageMobile = showPageMobile;
+window.renderWishlistPage = renderWishlistPage;
 window.filterP = filterP;
 window.renderCatalog = renderCatalog;
+window.onSearchInput = onSearchInput;
+window.executeSearch = executeSearch;
+window.clearSearch = clearSearch;

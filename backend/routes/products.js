@@ -5,6 +5,59 @@ const { authenticateToken, requireAdmin } = require('../middleware/auth');
 const logger = require('../logger');
 const { ERROR_CODES, sendError } = require('../lib/errors');
 
+// GET /api/products/search?q=term — full-text search (FTS5 on SQLite, ILIKE on PostgreSQL)
+router.get('/search', async (req, res) => {
+  try {
+    const q = (req.query.q || '').trim();
+    if (!q) return res.json({ products: [], total: 0, query: '' });
+
+    const limit = Math.min(50, Math.max(1, parseInt(req.query.limit) || 20));
+
+    // Detect SQLite vs PostgreSQL
+    const { isPostgres } = require('../database');
+
+    let results;
+    if (!isPostgres) {
+      // SQLite: use FTS5 MATCH with BM25 ranking
+      const ftsQuery = q.split(/\s+/).filter(Boolean).map(w => `"${w.replace(/"/g, '""')}"`).join(' ');
+      results = await all(
+        `SELECT p.*, rank FROM products_fts fts
+         JOIN products p ON p.id = fts.rowid
+         WHERE products_fts MATCH ?
+         ORDER BY rank
+         LIMIT ?`,
+        [ftsQuery, limit]
+      );
+    } else {
+      // PostgreSQL: use ILIKE for substring matching across key fields
+      const pattern = `%${q}%`;
+      results = await all(
+        `SELECT * FROM products
+         WHERE name ILIKE ? OR category ILIKE ? OR vendor ILIKE ? OR description ILIKE ?
+         ORDER BY
+           CASE WHEN name ILIKE ? THEN 0 ELSE 1 END,
+           id
+         LIMIT ?`,
+        [pattern, pattern, pattern, pattern, pattern, limit]
+      );
+    }
+
+    const parsed = results.map(p => ({
+      ...p,
+      colors: tryParse(p.colors_json, []),
+      sizes: tryParse(p.sizes_json, []),
+      subs: tryParse(p.subs_json, []),
+      rank: undefined
+    }));
+
+    res.json({ products: parsed, total: parsed.length, query: q });
+  } catch (err) {
+    logger.error('Product search error', { message: err.message, stack: err.stack });
+    // Graceful fallback: return empty if search fails
+    res.json({ products: [], total: 0, query: req.query.q || '' });
+  }
+});
+
 // GET /api/products — public (with optional pagination)
 router.get('/', async (req, res) => {
   try {

@@ -11,7 +11,7 @@ function renderCoSummary() {
   const loginBanner = document.getElementById('checkoutLoginBanner');
   if (loginBanner) loginBanner.style.display = customerUser ? 'none' : 'block';
   const csi = document.getElementById('coSummaryItems');
-  if (csi) csi.innerHTML = cart.map(i => `<div style="display:flex;gap:12px;margin-bottom:16px"><div style="width:56px;height:70px;background:var(--dust);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">${i.prod.emoji}</div><div><div style="font-size:12px;font-weight:500">${escapeHtml(i.prod.name)}</div><div style="font-size:10px;color:var(--slate)">${escapeHtml(i.color)} · ${escapeHtml(i.size)} · Qty ${i.qty}</div><div style="font-family:'DM Mono',monospace;font-size:11px;margin-top:2px">৳${(i.prod.price * i.qty).toLocaleString()}</div></div></div>`).join('');
+  if (csi) csi.innerHTML = cart.map(i => `<div class="checkout-summary-item"><div class="checkout-summary-img">${i.prod.image_url ? `<img src="${escapeHtml(i.prod.image_url)}" alt="${escapeHtml(i.prod.name)}">` : i.prod.emoji}</div><div><div class="checkout-summary-name">${escapeHtml(i.prod.name)}</div><div class="checkout-summary-meta">${escapeHtml(i.color)} · ${escapeHtml(i.size)} · Qty ${i.qty}</div></div><div class="checkout-summary-price mono">৳${(i.prod.price * i.qty).toLocaleString()}</div></div>`).join('');
   const sub = cart.reduce((s, i) => s + i.prod.price * i.qty, 0), ship = sub > 3000 ? 0 : 80;
   const cs = document.getElementById('co_sub');
   if (cs) cs.textContent = '৳' + sub.toLocaleString();

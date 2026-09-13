@@ -185,6 +185,50 @@ describe('PUT /api/products/:id (admin)', () => {
   });
 });
 
+describe('GET /api/products/search', () => {
+  it('returns products matching a search term', async () => {
+    const res = await request(app).get('/api/products/search?q=muslin');
+    expect(res.status).toBe(200);
+    expect(res.body.products.length).toBeGreaterThanOrEqual(1);
+    expect(res.body.query).toBe('muslin');
+  });
+
+  it('returns empty array for no matches', async () => {
+    const res = await request(app).get('/api/products/search?q=xyznonexistent');
+    expect(res.status).toBe(200);
+    expect(res.body.products).toEqual([]);
+    expect(res.body.total).toBe(0);
+  });
+
+  it('returns empty array for empty query', async () => {
+    const res = await request(app).get('/api/products/search?q=');
+    expect(res.status).toBe(200);
+    expect(res.body.products).toEqual([]);
+  });
+
+  it('searches across category and vendor fields', async () => {
+    const res = await request(app).get('/api/products/search?q=NAKSHI');
+    expect(res.status).toBe(200);
+    // NAKSHI STUDIO is the vendor for some products
+    expect(res.body.products.length).toBeGreaterThanOrEqual(1);
+  });
+
+  it('supports limit parameter', async () => {
+    const res = await request(app).get('/api/products/search?q=a&limit=2');
+    expect(res.status).toBe(200);
+    expect(res.body.products.length).toBeLessThanOrEqual(2);
+  });
+
+  it('parses JSON fields in search results', async () => {
+    const res = await request(app).get('/api/products/search?q=muslin');
+    if (res.body.products.length > 0) {
+      const product = res.body.products[0];
+      expect(Array.isArray(product.colors)).toBe(true);
+      expect(Array.isArray(product.sizes)).toBe(true);
+    }
+  });
+});
+
 describe('DELETE /api/products/:id (admin)', () => {
   it('deletes a product as admin', async () => {
     const createRes = await request(app)

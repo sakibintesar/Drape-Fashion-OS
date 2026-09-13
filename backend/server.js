@@ -1,4 +1,4 @@
-require('dotenv').config();
+require('dotenv').config({ path: require('path').join(__dirname, '../.env') });
 
 // ── Environment validation — fail fast with clear message ──
 const requiredEnvVars = ['JWT_ACCESS_SECRET', 'JWT_REFRESH_SECRET'];
@@ -36,6 +36,8 @@ const seoRoutes = require('./routes/seo');
 const newsletterRoutes = require('./routes/newsletter');
 const reviewRoutes = require('./routes/reviews');
 const referralRoutes = require('./routes/referrals');
+const socialRoutes = require('./routes/social');
+const influencerRoutes = require('./routes/influencer');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -101,6 +103,10 @@ app.use('/api/reviews', reviewRoutes);
 
 // ── Referral Routes ──
 app.use('/api/referrals', referralRoutes);
+
+// ── Social Hub Routes ──
+app.use('/api/social', socialRoutes);
+app.use('/api/influencer', influencerRoutes);
 
 // ── Serve frontend ──
 const frontendPath = path.resolve(__dirname, '../frontend');

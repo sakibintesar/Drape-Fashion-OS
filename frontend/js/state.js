@@ -70,6 +70,64 @@ let scheduledPosts = [];
 let activeWaChat = null;
 let waChats = [];
 
+// ─── WISHLIST STATE ───
+let wishlist = JSON.parse(localStorage.getItem('drape_wishlist') || '[]');
+
+function toggleWishlist(productId) {
+  const idx = wishlist.indexOf(productId);
+  if (idx > -1) {
+    wishlist.splice(idx, 1);
+    showToast('Removed from wishlist.', 'success');
+  } else {
+    wishlist.push(productId);
+    showToast('Added to wishlist ❤️', 'success');
+  }
+  localStorage.setItem('drape_wishlist', JSON.stringify(wishlist));
+  updateWishlistUI();
+  // Re-render any visible product grids to update heart icons
+  renderAll();
+}
+
+function isWishlisted(productId) {
+  return wishlist.includes(productId);
+}
+
+function updateWishlistUI() {
+  const badge = document.getElementById('wishlistCount');
+  if (badge) {
+    badge.textContent = wishlist.length;
+    badge.style.display = wishlist.length > 0 ? 'flex' : 'none';
+  }
+}
+
+// ─── RECENTLY VIEWED STATE ───
+let recentlyViewed = JSON.parse(localStorage.getItem('drape_recently_viewed') || '[]');
+
+function trackRecentlyViewed(productId) {
+  recentlyViewed = recentlyViewed.filter(id => id !== productId);
+  recentlyViewed.unshift(productId);
+  if (recentlyViewed.length > 8) recentlyViewed = recentlyViewed.slice(0, 8);
+  localStorage.setItem('drape_recently_viewed', JSON.stringify(recentlyViewed));
+}
+
+function getRecentlyViewedProducts() {
+  return recentlyViewed.map(id => products.find(p => p.id === id)).filter(Boolean);
+}
+
+// ─── SORT STATE ───
+let shopSort = 'default';
+
+function sortProducts(list, method) {
+  const sorted = [...list];
+  switch (method) {
+    case 'price-asc': return sorted.sort((a, b) => a.price - b.price);
+    case 'price-desc': return sorted.sort((a, b) => b.price - a.price);
+    case 'newest': return sorted.sort((a, b) => b.id - a.id);
+    case 'bestselling': return sorted.sort((a, b) => (b.sold || 0) - (a.sold || 0));
+    default: return sorted;
+  }
+}
+
 // ─── CUSTOMER AUTH STATE ───
 let customerUser = null;
 let customerAccessToken = null;

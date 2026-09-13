@@ -82,6 +82,20 @@ function getDbConfig() {
 // ── Backup Functions ──────────────────────────────────────────────────────────
 
 /**
+ * Detect whether we're running SQLite or PostgreSQL.
+ */
+function isSQLite() {
+  return !process.env.PGHOST && !process.env.DATABASE_URL;
+}
+
+/**
+ * Get the SQLite database file path.
+ */
+function getSqlitePath() {
+  return process.env.DB_PATH || path.resolve(__dirname, '../data/drape.db');
+}
+
+/**
  * Run pg_dump and return the raw SQL output as a Buffer.
  */
 async function runPgDump() {
@@ -134,6 +148,61 @@ async function runPgDump() {
       reject(new Error(`Failed to start pg_dump: ${err.message}. Is PostgreSQL installed and in PATH?`));
     });
   });
+}
+
+/**
+ * Create a SQLite backup using the .backup() API (safe, consistent snapshot).
+ * Falls back to a raw file copy if the backup API isn't available.
+ */
+async function runSqliteBackup() {
+  const dbPath = getSqlitePath();
+  if (!fs.existsSync(dbPath)) {
+    throw new Error(`SQLite database not found at ${dbPath}`);
+  }
+
+  const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+  const filename = `drape-backup-${timestamp}.db.gz`;
+  const tmpPath = path.join(os.tmpdir(), filename);
+
+  console.log(`Backing up SQLite database: ${dbPath}...`);
+
+  // Try using better-sqlite3's .backup() API for a consistent snapshot
+  try {
+    const Database = require('better-sqlite3');
+    const db = new Database(dbPath, { readonly: true });
+
+    await new Promise((resolve, reject) => {
+      const backup = db.backup(tmpPath.replace('.gz', ''));
+      backup
+        .then(() => resolve())
+        .catch(err => reject(err));
+    });
+
+    db.close();
+
+    // Compress with gzip
+    const { createGzip } = require('zlib');
+    const { pipeline } = require('stream/promises');
+    const src = fs.createReadStream(tmpPath.replace('.gz', ''));
+    const dst = fs.createWriteStream(tmpPath);
+    await pipeline(src, createGzip(), dst);
+
+    // Remove uncompressed copy
+    fs.unlinkSync(tmpPath.replace('.gz', ''));
+
+    return { tmpPath, filename };
+  } catch (backupErr) {
+    // Fallback: raw file copy + gzip (less consistent but works)
+    console.log(`  backup() API failed (${backupErr.message}), falling back to file copy...`);
+
+    const { createGzip } = require('zlib');
+    const { pipeline } = require('stream/promises');
+    const src = fs.createReadStream(dbPath);
+    const dst = fs.createWriteStream(tmpPath);
+    await pipeline(src, createGzip(), dst);
+
+    return { tmpPath, filename };
+  }
 }
 
 /**
@@ -208,17 +277,21 @@ async function cleanupOldBackups() {
 }
 
 /**
- * Run a full backup: pg_dump -> gzip -> S3 upload -> cleanup old.
+ * Run a full backup: pg_dump/sqlite → gzip → S3 upload → cleanup old.
  */
 async function backup() {
   const startTime = Date.now();
-  console.log(`\n=== DRAPE Database Backup — ${new Date().toISOString()} ===\n`);
+  const useSqlite = isSQLite();
+  console.log(`\n=== DRAPE Database Backup — ${new Date().toISOString()} ===`);
+  console.log(`Mode: ${useSqlite ? 'SQLite' : 'PostgreSQL'}\n`);
 
   try {
-    // 1. pg_dump
-    const { tmpPath, filename } = await runPgDump();
+    // 1. Dump/copy database
+    const { tmpPath, filename } = useSqlite
+      ? await runSqliteBackup()
+      : await runPgDump();
     const stats = fs.statSync(tmpPath);
-    console.log(`pg_dump complete: ${(stats.size / 1024).toFixed(1)} KB (compressed)`);
+    console.log(`Backup complete: ${(stats.size / 1024).toFixed(1)} KB (compressed)`);
 
     // 2. Upload to S3
     const s3Key = `${BACKUP_PREFIX}/${filename}`;

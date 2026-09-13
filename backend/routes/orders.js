@@ -5,6 +5,7 @@ const { run, get, all, transaction } = require('../database');
 const { authenticateToken, optionalAuth, requireAdmin } = require('../middleware/auth');
 const logger = require('../logger');
 const { ERROR_CODES, sendError } = require('../lib/errors');
+const { sendOrderConfirmation } = require('../services/email');
 
 // SECURITY: Use crypto for unpredictable order IDs
 function genOrderId() {
@@ -41,6 +42,10 @@ router.post('/', optionalAuth, async (req, res) => {
   const { fname, lname, email, phone, address, city, postcode, items, payment, referral_code } = req.body;
   if (!fname || !email || !phone || !address || !items?.length) {
     return sendError(res, 400, 'Missing required fields', ERROR_CODES.VALIDATION_ERROR);
+  }
+  // Optional: require login for orders (set REQUIRE_LOGIN_FOR_ORDERS=true in .env)
+  if (process.env.REQUIRE_LOGIN_FOR_ORDERS === 'true' && !req.user?.id) {
+    return sendError(res, 401, 'Please log in to place an order', ERROR_CODES.UNAUTHORIZED);
   }
   try {
     const orderId = genOrderId();
@@ -89,6 +94,18 @@ router.post('/', optionalAuth, async (req, res) => {
       return { orderId, subtotal, shipping, total, items: validatedItems };
     });
     res.status(201).json({ success: true, ...result });
+
+    // Send order confirmation email (non-blocking — email failure doesn't fail the order)
+    sendOrderConfirmation({
+      orderId: result.orderId,
+      items: result.items,
+      total: result.total,
+      subtotal: result.subtotal,
+      shipping: result.shipping,
+      email,
+      customer_fname: fname,
+      payment_method: payment || 'cod'
+    }).catch(err => logger.error('Order confirmation email failed', { message: err.message }));
   } catch (err) {
     logger.error('Create order error', { message: err.message, stack: err.stack });
     if (err.message.includes('Insufficient') || err.message.includes('not found')) {

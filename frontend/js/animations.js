@@ -108,18 +108,31 @@ function initHeroCursor() {
   if (!hero) return;
 
   const layers = hero.querySelectorAll('.cursor-layer');
-  if (!layers.length) return;
+  const gradient = hero.querySelector('.hero-full-gradient');
+  let pending = false;
+  let lastX = 0, lastY = 0;
 
   hero.addEventListener('mousemove', (e) => {
     const rect = hero.getBoundingClientRect();
-    const x = (e.clientX - rect.left) / rect.width - 0.5;
-    const y = (e.clientY - rect.top) / rect.height - 0.5;
+    lastX = (e.clientX - rect.left) / rect.width - 0.5;
+    lastY = (e.clientY - rect.top) / rect.height - 0.5;
 
-    layers.forEach(layer => {
-      const depth = parseFloat(layer.getAttribute('data-depth') || '10');
-      layer.style.transform = `translate(${x * depth}px, ${y * depth}px)`;
-    });
-  });
+    if (!pending) {
+      pending = true;
+      requestAnimationFrame(() => {
+        layers.forEach(layer => {
+          const depth = parseFloat(layer.getAttribute('data-depth') || '10');
+          layer.style.transform = `translate(${lastX * depth}px, ${lastY * depth}px)`;
+        });
+
+        if (gradient) {
+          gradient.style.setProperty('--mx', `${30 + lastX * 20}%`);
+          gradient.style.setProperty('--my', `${50 + lastY * 20}%`);
+        }
+        pending = false;
+      });
+    }
+  }, { passive: true });
 }
 
 // ─── SMOOTH SCROLL TO SECTION ───
@@ -177,6 +190,40 @@ function staggerReveal(parentSelector, childSelector, delay = 100) {
   observer.observe(parent);
 }
 
+// ─── SCROLL TIMELINE DETECTION ───
+function hasScrollTimeline() {
+  return CSS.supports && CSS.supports('animation-timeline', 'view()');
+}
+
+// ─── JOURNEY PROGRESS LINE ───
+function initJourneyProgress() {
+  // If native CSS scroll-driven animations are supported, the CSS handles it.
+  // Otherwise, we drive the progress line with JS.
+  if (hasScrollTimeline()) return;
+
+  const fill = document.querySelector('.journey-progress-fill');
+  if (!fill) return;
+
+  const timeline = document.querySelector('.journey-timeline');
+  if (!timeline) return;
+
+  let ticking = false;
+  window.addEventListener('scroll', () => {
+    if (!ticking) {
+      requestAnimationFrame(() => {
+        const rect = timeline.getBoundingClientRect();
+        const viewH = window.innerHeight;
+        const total = rect.height;
+        const scrolled = viewH - rect.top;
+        const progress = Math.max(0, Math.min(1, scrolled / (total + viewH * 0.3)));
+        fill.style.transform = `translateX(-50%) scaleY(${progress})`;
+        ticking = false;
+      });
+      ticking = true;
+    }
+  }, { passive: true });
+}
+
 // ─── INIT ALL ───
 function initAnimations() {
   initScrollAnimations();
@@ -185,11 +232,13 @@ function initAnimations() {
   initParallax();
   initHeroCursor();
   initDragScroll();
+  initJourneyProgress();
 
   // Stagger product cards
   staggerReveal('.product-grid', '.product-card', 80);
   staggerReveal('.editorial-grid', '.editorial-card', 120);
   staggerReveal('.stats-bar', '.stat-item', 150);
+  staggerReveal('.influencer-benefits', '.influencer-benefit', 100);
 }
 
 // ─── EXPORT ───

@@ -100,6 +100,12 @@ router.post('/register', async (req, res) => {
       refreshToken,
       user: { id: userId, email, role: 'customer', fname: fname || '', lname: lname || '', phone: phone || '' }
     });
+
+    // Send welcome email (non-blocking)
+    const { sendWelcomeEmail } = require('../services/email');
+    sendWelcomeEmail({ email, fname: fname || '' }).catch(err =>
+      logger.error('Welcome email failed', { message: err.message })
+    );
   } catch (err) {
     logger.error('Register error', { message: err.message, stack: err.stack });
     sendError(res, 500, 'Server error', ERROR_CODES.INTERNAL_ERROR);
