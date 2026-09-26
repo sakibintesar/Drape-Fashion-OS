@@ -4,6 +4,24 @@ const { run, get, all } = require('../database');
 const { authenticateToken } = require('../middleware/auth');
 const logger = require('../logger');
 
+// GET /api/reviews/recent — Recent reviews across all products (public, for testimonials)
+router.get('/recent', async (req, res) => {
+  try {
+    const reviews = await all(
+      `SELECT r.*, u.fname, u.lname, p.name as product_name, p.vendor
+       FROM reviews r
+       LEFT JOIN users u ON r.user_id = u.id
+       LEFT JOIN products p ON r.product_id = p.id
+       ORDER BY r.created_at DESC
+       LIMIT 10`
+    );
+    res.json({ reviews: reviews || [] });
+  } catch (err) {
+    logger.error('Get recent reviews error', { message: err.message });
+    res.json({ reviews: [] });
+  }
+});
+
 // GET /api/reviews/:productId — Get reviews for a product (public)
 router.get('/:productId', async (req, res) => {
   try {

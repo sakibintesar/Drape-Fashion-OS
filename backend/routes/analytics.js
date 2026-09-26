@@ -5,6 +5,48 @@ const { authenticateToken, requireAdmin } = require('../middleware/auth');
 const logger = require('../logger');
 const { ERROR_CODES, sendError } = require('../lib/errors');
 
+// GET /api/analytics/stats — public stats for landing page (no auth)
+router.get('/stats', async (req, res) => {
+  try {
+    const [productsRow, customersRow, ordersRow] = await Promise.all([
+      get('SELECT COUNT(*) as count FROM products'),
+      get('SELECT COUNT(*) as count FROM users WHERE role = ?', ['customer']),
+      get('SELECT COUNT(*) as count FROM orders WHERE status != ?', ['cancelled'])
+    ]);
+    res.json({
+      products: productsRow?.count || 0,
+      customers: customersRow?.count || 0,
+      orders: ordersRow?.count || 0
+    });
+  } catch (err) {
+    logger.error('Public stats error', { message: err.message });
+    res.json({ products: 0, customers: 0, orders: 0 });
+  }
+});
+
+// GET /api/analytics/brands — public brand summaries for editorial grid (no auth)
+router.get('/brands', async (req, res) => {
+  try {
+    const brands = await all(`
+      SELECT
+        vendor,
+        COUNT(*) as product_count,
+        MIN(price) as min_price,
+        MAX(price) as max_price,
+        ROUND(AVG(price), 0) as avg_price,
+        SUM(sold) as total_sold,
+        GROUP_CONCAT(DISTINCT category) as categories
+      FROM products
+      GROUP BY vendor
+      ORDER BY total_sold DESC
+    `);
+    res.json({ brands: brands || [] });
+  } catch (err) {
+    logger.error('Brands error', { message: err.message });
+    res.json({ brands: [] });
+  }
+});
+
 // GET /api/analytics — admin dashboard stats
 router.get('/', authenticateToken, requireAdmin, async (req, res) => {
   try {

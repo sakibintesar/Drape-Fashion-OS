@@ -30,11 +30,20 @@ function renderLandingHero() {
         Every piece made to outlast the season.
       </p>
       <div class="hero-full-cta reveal reveal-delay-3">
-        <button class="btn-premium" onclick="smoothScrollTo('#section-editorial')">
-          <span>Explore Collection</span>
-          <span class="btn-arrow">↓</span>
+        <button class="btn btn-lg btn-primary-dark" onclick="showPage('shop')">
+          Shop SS/26 Collection
+          <span class="btn-arrow">→</span>
         </button>
-        <button class="btn-ghost-light" onclick="showPage('brands')">Our Brands</button>
+        <button class="btn btn-lg btn-ghost-light" onclick="smoothScrollTo('#section-editorial')">
+          Meet Our Artisans
+        </button>
+      </div>
+      <div class="hero-trust-badges reveal reveal-delay-4">
+        <span class="hero-trust-item">✓ Free Shipping</span>
+        <span class="hero-trust-divider">·</span>
+        <span class="hero-trust-item">✓ Easy Returns</span>
+        <span class="hero-trust-divider">·</span>
+        <span class="hero-trust-item">✓ COD Available</span>
       </div>
       <div class="hero-full-scroll-hint reveal reveal-delay-4">
         <div class="scroll-line"></div>
@@ -66,7 +75,52 @@ function renderLandingHero() {
 }
 
 // ─── EDITORIAL GRID ───
-function renderEditorialGrid() {
+async function renderEditorialGrid() {
+  // Brand display config — maps vendor names to card styles
+  const brandConfig = {
+    'LOOM & GRACE': { gradient: 'linear-gradient(135deg,#2d1f14,#1a1210)', cat: 'Dresses & Occasion', tag: 'Heritage muslin · Handwoven', catId: 'b_loom' },
+    'THREAD REPUBLIC': { gradient: 'linear-gradient(135deg,#1a2a1f,#0d1a12)', cat: 'Tops & Knitwear', tag: 'Recycled cotton · Ethical', catId: 'b_thread' },
+    'NAKSHI STUDIO': { gradient: 'linear-gradient(135deg,#2a1a2a,#1a0d1a)', cat: 'Ethnic & Embroidered', tag: '220+ artisans · Fair-trade', catId: 'b_nakshi' },
+    'ZEPHYR CUTS': { gradient: 'linear-gradient(135deg,#1a1a2a,#0d0d1a)', cat: 'Tailored Bottoms', tag: '14 QC checks · Precision', catId: 'b_zephyr' },
+    'ADORN CO.': { gradient: 'linear-gradient(135deg,#2a2a1a,#1a1a0d)', cat: 'Accessories & Jewellery', tag: 'Full-grain leather · 5yr guarantee', catId: 'b_adorn' }
+  };
+
+  // Fallback hardcoded data
+  const fallback = [
+    { vendor: 'LOOM & GRACE', product_count: 5, total_sold: 120, categories: 'Dresses' },
+    { vendor: 'THREAD REPUBLIC', product_count: 3, total_sold: 85, categories: 'Tops,Outerwear' },
+    { vendor: 'NAKSHI STUDIO', product_count: 4, total_sold: 200, categories: 'Tops,Outerwear,Accessories' },
+    { vendor: 'ZEPHYR CUTS', product_count: 3, total_sold: 60, categories: 'Bottoms,Outerwear' },
+    { vendor: 'ADORN CO.', product_count: 3, total_sold: 150, categories: 'Accessories' }
+  ];
+
+  let brands = fallback;
+  try {
+    const res = await fetch('/api/analytics/brands');
+    if (res.ok) {
+      const data = await res.json();
+      if (data.brands?.length > 0) brands = data.brands;
+    }
+  } catch (e) {
+    console.log('[DRAPE] Brands API not available, using defaults');
+  }
+
+  const cards = brands.slice(0, 5).map((b, i) => {
+    const cfg = brandConfig[b.vendor] || { gradient: 'linear-gradient(135deg,#2a2a2a,#1a1a1a)', cat: b.categories?.split(',')[0] || 'Fashion', tag: `${b.product_count} pieces`, catId: 'shop' };
+    const sold = b.total_sold || 0;
+    const tagline = sold > 0 ? `${b.product_count} pieces · ${sold}+ sold` : `${b.product_count} pieces · ${cfg.tag}`;
+    return `
+      <div class="editorial-card ${i === 0 ? 'editorial-tall' : ''} reveal reveal-delay-${i + 1}" onclick="showPage('catalog');setTimeout(()=>showCat('${cfg.catId}',null),100)">
+        <div class="editorial-card-bg" style="background:${cfg.gradient}"></div>
+        <div class="editorial-card-content">
+          <div class="editorial-card-cat">${cfg.cat}</div>
+          <div class="editorial-card-name display">${b.vendor.charAt(0) + b.vendor.slice(1).toLowerCase()}</div>
+          <div class="editorial-card-meta">${tagline}</div>
+        </div>
+        <div class="editorial-card-arrow">→</div>
+      </div>`;
+  }).join('');
+
   return `
   <section class="section-editorial" id="section-editorial">
     <div class="editorial-header reveal">
@@ -75,68 +129,43 @@ function renderEditorialGrid() {
       <p class="editorial-sub">Each a master of their craft. Sourced directly, quality-checked, fulfilled under one roof.</p>
     </div>
     <div class="editorial-grid">
-      <div class="editorial-card editorial-tall reveal reveal-delay-1" onclick="showPage('catalog');setTimeout(()=>showCat('b_loom',null),100)">
-        <div class="editorial-card-bg" style="background:linear-gradient(135deg,#2d1f14,#1a1210)"></div>
-        <div class="editorial-card-icon">🌿</div>
-        <div class="editorial-card-content">
-          <div class="editorial-card-cat">Dresses & Occasion</div>
-          <div class="editorial-card-name display">Loom & Grace</div>
-          <div class="editorial-card-meta">Heritage muslin · 3-6 day weave</div>
-        </div>
-        <div class="editorial-card-arrow">→</div>
-      </div>
-      <div class="editorial-card reveal reveal-delay-2" onclick="showPage('catalog');setTimeout(()=>showCat('b_thread',null),100)">
-        <div class="editorial-card-bg" style="background:linear-gradient(135deg,#1a2a1f,#0d1a12)"></div>
-        <div class="editorial-card-icon">✂️</div>
-        <div class="editorial-card-content">
-          <div class="editorial-card-cat">Tops & Knitwear</div>
-          <div class="editorial-card-name display">Thread Republic</div>
-          <div class="editorial-card-meta">Recycled cotton · 140 women employed</div>
-        </div>
-        <div class="editorial-card-arrow">→</div>
-      </div>
-      <div class="editorial-card reveal reveal-delay-3" onclick="showPage('catalog');setTimeout(()=>showCat('b_nakshi',null),100)">
-        <div class="editorial-card-bg" style="background:linear-gradient(135deg,#2a1a2a,#1a0d1a)"></div>
-        <div class="editorial-card-icon">🎨</div>
-        <div class="editorial-card-content">
-          <div class="editorial-card-cat">Ethnic & Embroidered</div>
-          <div class="editorial-card-name display">Nakshi Studio</div>
-          <div class="editorial-card-meta">220+ artisans · Fair-trade model</div>
-        </div>
-        <div class="editorial-card-arrow">→</div>
-      </div>
-      <div class="editorial-card editorial-wide reveal reveal-delay-3" onclick="showPage('catalog');setTimeout(()=>showCat('b_zephyr',null),100)">
-        <div class="editorial-card-bg" style="background:linear-gradient(135deg,#1a1a2a,#0d0d1a)"></div>
-        <div class="editorial-card-icon">🔪</div>
-        <div class="editorial-card-content">
-          <div class="editorial-card-cat">Tailored Bottoms</div>
-          <div class="editorial-card-name display">Zephyr Cuts</div>
-          <div class="editorial-card-meta">14 QC checkpoints · Italian canvas</div>
-        </div>
-        <div class="editorial-card-arrow">→</div>
-      </div>
-      <div class="editorial-card reveal reveal-delay-4" onclick="showPage('catalog');setTimeout(()=>showCat('b_adorn',null),100)">
-        <div class="editorial-card-bg" style="background:linear-gradient(135deg,#2a2a1a,#1a1a0d)"></div>
-        <div class="editorial-card-icon">💎</div>
-        <div class="editorial-card-content">
-          <div class="editorial-card-cat">Accessories & Jewellery</div>
-          <div class="editorial-card-name display">Adorn Co.</div>
-          <div class="editorial-card-meta">Full-grain leather · 5-year guarantee</div>
-        </div>
-        <div class="editorial-card-arrow">→</div>
-      </div>
+      ${cards}
     </div>
   </section>`;
 }
 
 // ─── BRAND STORY (SPLIT SCREEN) ───
-function renderBrandStory() {
+async function renderBrandStory() {
+  // Brand story descriptions
+  const brandStories = {
+    'LOOM & GRACE': { emoji: '🌿', desc: 'Every Loom & Grace garment starts life in a handloom workshop in Old Dhaka. The weaving process for a single dress takes 3–6 days. Their dye house uses only plant-based mordants. Carbon-neutral since 2022.', stats: [{ num: '3–6', label: 'Days per garment' }, { num: '100%', label: 'Plant-based dyes' }, { num: '2022', label: 'Carbon neutral' }], catId: 'b_loom' },
+    'NAKSHI STUDIO': { emoji: '🎨', desc: 'Nakshi Studio employs over 220 artisans across rural Bangladesh, preserving centuries-old kantha embroidery traditions. Every stitch tells a story of heritage passed down through generations.', stats: [{ num: '220+', label: 'Skilled artisans' }, { num: '500yr', label: 'Kantha tradition' }, { num: '100%', label: 'Fair-trade' }], catId: 'b_nakshi' },
+    'THREAD REPUBLIC': { emoji: '✂️', desc: 'Thread Republic transforms recycled cotton and deadstock fabric into modern essentials. They employ 140 women from underserved communities, providing fair wages and skills training.', stats: [{ num: '140', label: 'Women employed' }, { num: '80%', label: 'Recycled materials' }, { num: 'Zero', label: 'Waste to landfill' }], catId: 'b_thread' },
+    'ZEPHYR CUTS': { emoji: '✂️', desc: 'Zephyr Cuts brings precision tailoring to Dhaka\'s fashion scene. With 14 quality checkpoints per garment and Italian canvas interfacing, every piece is built to last.', stats: [{ num: '14', label: 'QC checkpoints' }, { num: 'Italian', label: 'Canvas interfacing' }, { num: '1yr', label: 'Wear guarantee' }], catId: 'b_zephyr' },
+    'ADORN CO.': { emoji: '💎', desc: 'Adorn Co. crafts accessories from full-grain leather and recycled brass. Every bag and jewel is hand-finished in their Dhaka workshop, with a 5-year guarantee on all hardware.', stats: [{ num: '5yr', label: 'Hardware guarantee' }, { num: 'Full-grain', label: 'Leather only' }, { num: '100%', label: 'Recycled brass' }], catId: 'b_adorn' }
+  };
+
+  // Try to get top-selling brand from API
+  let story = brandStories['LOOM & GRACE']; // fallback
+  try {
+    const res = await fetch('/api/analytics/brands');
+    if (res.ok) {
+      const data = await res.json();
+      if (data.brands?.length > 0) {
+        const top = data.brands[0];
+        story = brandStories[top.vendor] || story;
+      }
+    }
+  } catch (e) {
+    console.log('[DRAPE] Brands API not available for brand story');
+  }
+
   return `
   <section class="section-split">
     <div class="split-left reveal">
       <div class="split-visual">
         <div class="split-visual-inner">
-          <div class="split-icon-large">🌿</div>
+          <div class="split-icon-large">${story.emoji}</div>
           <div class="split-tag">Featured Brand</div>
         </div>
       </div>
@@ -145,27 +174,16 @@ function renderBrandStory() {
       <div class="split-content">
         <span class="section-eyebrow reveal">The Craft</span>
         <h2 class="split-title display reveal reveal-delay-1">From Dhaka's<br>Finest Workshops</h2>
-        <p class="split-text reveal reveal-delay-2">
-          Every Loom & Grace garment starts life in a handloom workshop in Old Dhaka.
-          The weaving process for a single dress takes 3–6 days. Their dye house uses
-          only plant-based mordants. Carbon-neutral since 2022.
-        </p>
+        <p class="split-text reveal reveal-delay-2">${story.desc}</p>
         <div class="split-stats reveal reveal-delay-3">
+          ${story.stats.map(s => `
           <div class="split-stat">
-            <div class="split-stat-num display">3–6</div>
-            <div class="split-stat-label">Days per garment</div>
-          </div>
-          <div class="split-stat">
-            <div class="split-stat-num display">100%</div>
-            <div class="split-stat-label">Plant-based dyes</div>
-          </div>
-          <div class="split-stat">
-            <div class="split-stat-num display">2022</div>
-            <div class="split-stat-label">Carbon neutral</div>
-          </div>
+            <div class="split-stat-num display">${s.num}</div>
+            <div class="split-stat-label">${s.label}</div>
+          </div>`).join('')}
         </div>
-        <button class="btn-primary reveal reveal-delay-4" onclick="showPage('catalog');setTimeout(()=>showCat('b_loom',null),100)">
-          Shop Loom & Grace →
+        <button class="btn-primary reveal reveal-delay-4" onclick="showPage('catalog');setTimeout(()=>showCat('${story.catId}',null),100)">
+          Shop ${story.stats[0] ? story.stats[0].label : 'Brand'} →
         </button>
       </div>
     </div>
@@ -214,27 +232,47 @@ function renderHscrollItem(product) {
 }
 
 // ─── STATS BAR ───
-function renderStatsBar() {
+async function renderStatsBar() {
+  // Default values (fallback if API fails)
+  const stats = {
+    products: 25,
+    brands: 5,
+    artisans: 220,
+    handcrafted: 100
+  };
+
+  // Try to fetch real stats from API
+  try {
+    const res = await fetch('/api/analytics/stats');
+    if (res.ok) {
+      const data = await res.json();
+      if (data.products > 0) stats.products = data.products;
+      if (data.orders > 0) stats.artisans = data.orders;
+    }
+  } catch (err) {
+    console.log('[DRAPE] Stats API not available, using defaults');
+  }
+
   return `
   <section class="section-stats">
     <div class="stats-bar">
       <div class="stat-item reveal">
-        <div class="stat-num display" data-count="25" data-suffix="+">0</div>
+        <div class="stat-num display" data-count="${stats.products}" data-suffix="+">0</div>
         <div class="stat-label">Curated Pieces</div>
       </div>
       <div class="stat-divider"></div>
       <div class="stat-item reveal reveal-delay-1">
-        <div class="stat-num display" data-count="5">0</div>
+        <div class="stat-num display" data-count="${stats.brands}">0</div>
         <div class="stat-label">Artisan Brands</div>
       </div>
       <div class="stat-divider"></div>
       <div class="stat-item reveal reveal-delay-2">
-        <div class="stat-num display" data-count="220" data-suffix="+">0</div>
+        <div class="stat-num display" data-count="${stats.artisans}" data-suffix="+">0</div>
         <div class="stat-label">Skilled Artisans</div>
       </div>
       <div class="stat-divider"></div>
       <div class="stat-item reveal reveal-delay-3">
-        <div class="stat-num display" data-count="100" data-suffix="%">0</div>
+        <div class="stat-num display" data-count="${stats.handcrafted}" data-suffix="%">0</div>
         <div class="stat-label">Handcrafted</div>
       </div>
     </div>
@@ -282,7 +320,54 @@ function renderLookbook() {
 }
 
 // ─── TESTIMONIALS ───
-function renderTestimonials() {
+async function renderTestimonials() {
+  // Fallback testimonials
+  const fallback = [
+    { fname: 'Nusrat', lname: 'J.', rating: 5, comment: 'The muslin dress is the most beautiful thing I own. The quality is incredible for the price.', product_name: 'Muslin Wrap Dress', vendor: 'LOOM & GRACE' },
+    { fname: 'Rahim', lname: 'K.', rating: 5, comment: 'Finally, a fashion brand from Bangladesh that\'s actually premium. The embroidery is museum-quality.', product_name: 'Broderie Kurta', vendor: 'NAKSHI STUDIO' },
+    { fname: 'Sarah', lname: 'M.', rating: 5, comment: 'Ordered from London, arrived in 5 days. The knitwear is better than COS at half the price.', product_name: 'Silk Slip Top', vendor: 'THREAD REPUBLIC' }
+  ];
+
+  let reviews = fallback;
+  try {
+    const res = await fetch('/api/reviews/recent');
+    if (res.ok) {
+      const data = await res.json();
+      if (data.reviews?.length >= 3) {
+        reviews = data.reviews.slice(0, 5).map(r => ({
+          fname: r.fname || 'Anonymous',
+          lname: r.lname || '',
+          rating: r.rating || 5,
+          comment: r.comment || '',
+          product_name: r.product_name || '',
+          vendor: r.vendor || ''
+        }));
+      }
+    }
+  } catch (e) {
+    console.log('[DRAPE] Reviews API not available, using defaults');
+  }
+
+  const stars = (n) => '★'.repeat(n) + '☆'.repeat(5 - n);
+
+  const cards = reviews.slice(0, 3).map((r, i) => {
+    const initial = (r.fname || 'A')[0].toUpperCase();
+    const name = r.lname ? `${r.fname} ${r.lname}.` : r.fname;
+    const loc = r.vendor || '';
+    return `
+      <div class="testimonial-card reveal${i > 0 ? ' reveal-delay-' + i : ''}">
+        <div class="testimonial-stars">${stars(r.rating)}</div>
+        <p class="testimonial-text">"${r.comment}"</p>
+        <div class="testimonial-author">
+          <div class="testimonial-avatar">${initial}</div>
+          <div>
+            <div class="testimonial-name">${name}</div>
+            <div class="testimonial-location">${loc}</div>
+          </div>
+        </div>
+      </div>`;
+  }).join('');
+
   return `
   <section class="section-testimonials">
     <div class="testimonials-header reveal">
@@ -290,39 +375,7 @@ function renderTestimonials() {
       <h2 class="testimonials-title display">What People Say</h2>
     </div>
     <div class="testimonials-grid">
-      <div class="testimonial-card reveal">
-        <div class="testimonial-stars">★★★★★</div>
-        <p class="testimonial-text">"The muslin dress from Loom & Grace is the most beautiful thing I own. The quality is incredible for the price."</p>
-        <div class="testimonial-author">
-          <div class="testimonial-avatar">N</div>
-          <div>
-            <div class="testimonial-name">Nusrat J.</div>
-            <div class="testimonial-location">Dhaka, Bangladesh</div>
-          </div>
-        </div>
-      </div>
-      <div class="testimonial-card reveal reveal-delay-1">
-        <div class="testimonial-stars">★★★★★</div>
-        <p class="testimonial-text">"Finally, a fashion brand from Bangladesh that's actually premium. The Nakshi embroidery is museum-quality."</p>
-        <div class="testimonial-author">
-          <div class="testimonial-avatar">R</div>
-          <div>
-            <div class="testimonial-name">Rahim K.</div>
-            <div class="testimonial-location">Chittagong, Bangladesh</div>
-          </div>
-        </div>
-      </div>
-      <div class="testimonial-card reveal reveal-delay-2">
-        <div class="testimonial-stars">★★★★★</div>
-        <p class="testimonial-text">"Ordered from London, arrived in 5 days. The Thread Republic knitwear is better than COS at half the price."</p>
-        <div class="testimonial-author">
-          <div class="testimonial-avatar">S</div>
-          <div>
-            <div class="testimonial-name">Sarah M.</div>
-            <div class="testimonial-location">London, UK</div>
-          </div>
-        </div>
-      </div>
+      ${cards}
     </div>
   </section>`;
 }
@@ -335,14 +388,28 @@ function renderCTASection() {
       <div class="cta-grain"></div>
     </div>
     <div class="cta-content reveal">
-      <h2 class="cta-title display">Join the Movement</h2>
-      <p class="cta-sub">Be part of Dhaka's emerging fashion revolution. Curated artisan pieces, delivered worldwide.</p>
+      <h2 class="cta-title display">Ready to Wear<br>Something Meaningful?</h2>
+      <p class="cta-sub">Join thousands who've discovered Dhaka's finest artisan fashion. Every piece tells a story — yours is next.</p>
       <div class="cta-buttons">
-        <button class="btn-premium" onclick="showPage('shop')">
-          <span>Shop Now</span>
+        <button class="btn btn-lg btn-primary" onclick="showPage('shop')">
+          Shop Collection
           <span class="btn-arrow">→</span>
         </button>
-        <button class="btn-ghost-light" onclick="showPage('brands')">Meet the Brands</button>
+        <button class="btn btn-lg btn-ghost-light" onclick="showPage('brands')">Browse Brands</button>
+      </div>
+      <div class="cta-trust-badges reveal reveal-delay-1">
+        <div class="cta-trust-item">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          <span>Secure Checkout</span>
+        </div>
+        <div class="cta-trust-item">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+          <span>Worldwide Shipping</span>
+        </div>
+        <div class="cta-trust-item">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1zM4 22v-7"/></svg>
+          <span>30-Day Returns</span>
+        </div>
       </div>
     </div>
   </section>`;
@@ -505,6 +572,28 @@ function renderProductAnatomy() {
     { tag: 'Hardware', title: 'Buttons & Zippers', text: 'Recycled brass buttons, hand-polished. YKK antique copper zippers. Every closure chosen to complement the fabric.' }
   ];
 
+  // SVG garment illustration — replaces emoji
+  const garmentSVG = `
+    <svg class="anatomy-garment-svg" viewBox="0 0 200 280" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <!-- Main body -->
+      <path d="M60 20 L140 20 L145 60 L160 140 L160 220 L40 220 L40 140 L55 60 Z" stroke="var(--ink)" stroke-width="2" fill="var(--chalk)" opacity="0.9"/>
+      <!-- Neckline -->
+      <path d="M80 20 Q100 10 120 20" stroke="var(--ink)" stroke-width="2" fill="none"/>
+      <!-- Sleeves -->
+      <path d="M55 60 Q30 80 30 120 Q30 160 55 140" stroke="var(--ink)" stroke-width="2" fill="var(--chalk)" opacity="0.9"/>
+      <path d="M145 60 Q170 80 170 120 Q170 160 145 140" stroke="var(--ink)" stroke-width="2" fill="var(--chalk)" opacity="0.9"/>
+      <!-- Waist seam -->
+      <path d="M50 120 Q100 110 150 120" stroke="var(--copper)" stroke-width="1.5" fill="none" stroke-dasharray="4,4"/>
+      <!-- Side seams -->
+      <path d="M55 60 L40 140" stroke="var(--ink)" stroke-width="1.5" fill="none"/>
+      <path d="M145 60 L160 140" stroke="var(--ink)" stroke-width="1.5" fill="none"/>
+      <!-- Button detail -->
+      <circle cx="100" cy="150" r="4" fill="var(--copper)"/>
+      <circle cx="100" cy="170" r="4" fill="var(--copper)"/>
+      <circle cx="100" cy="190" r="4" fill="var(--copper)"/>
+    </svg>
+  `;
+
   return `
   <section class="section-anatomy" id="section-anatomy">
     <div class="anatomy-header reveal">
@@ -522,7 +611,7 @@ function renderProductAnatomy() {
         </div>`).join('')}
       </div>
       <div class="anatomy-garment-core">
-        <div class="anatomy-core-image reveal-scale">🎽</div>
+        <div class="anatomy-core-image reveal-scale">${garmentSVG}</div>
         <div class="anatomy-core-label display">Signature Piece</div>
       </div>
       <div class="anatomy-column anatomy-callout-right">
@@ -665,7 +754,7 @@ async function submitInfluencer(e) {
 }
 
 // ─── INIT LANDING ───
-function initLanding(products) {
+async function initLanding(products) {
   // Inject all sections into the home page
   const homePage = document.getElementById('page-home');
   if (!homePage) return;
@@ -680,16 +769,23 @@ function initLanding(products) {
   const featuredSection = homePage.querySelector('.section');
   if (featuredSection) {
     // Insert sections before the featured grid — order matters for narrative flow
+    // Some renderers are async (fetch from API), so resolve them all
+    const [statsBarHTML, editorialHTML, brandStoryHTML, testimonialsHTML] = await Promise.all([
+      renderStatsBar(),
+      renderEditorialGrid(),
+      renderBrandStory(),
+      renderTestimonials()
+    ]);
     const sectionsHTML = [
       renderJourneyTimeline(),    // From Fiber to Doorstep — centerpiece
       renderProductAnatomy(),     // Deconstructed garment
-      renderEditorialGrid(),      // Five Brands grid
-      renderBrandStory(),         // Split screen brand feature
+      editorialHTML,              // Five Brands grid (dynamic from API)
+      brandStoryHTML,             // Split screen brand feature (dynamic)
       renderHorizontalGallery(),  // Horizontal scroll gallery
-      renderStatsBar(),           // Animated counters
+      statsBarHTML,               // Animated counters (with real data)
       renderLookbook(),           // Editorial style cards
       renderInfluencerHub(),      // Creator collab program
-      renderTestimonials(),       // Social proof
+      testimonialsHTML,           // Social proof (real reviews from API)
       renderCTASection(),         // Final CTA
     ].join('');
 
