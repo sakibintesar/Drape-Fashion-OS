@@ -1,50 +1,62 @@
 const express = require('express');
 const router = express.Router();
-const { all, get } = require('../database');
+const { get, all } = require('../database');
 const { authenticateToken, requireAdmin } = require('../middleware/auth');
-const { adminLimiter } = require('../middleware/rateLimiter');
 
-// GET /api/analytics - admin only, dashboard stats
-router.get('/', authenticateToken, requireAdmin, adminLimiter, async (req, res) => {
+// GET /api/analytics — admin dashboard stats
+router.get('/', authenticateToken, requireAdmin, async (req, res) => {
   try {
-    const totalProducts = await get('SELECT COUNT(*) as count FROM products');
-    const totalOrders = await get('SELECT COUNT(*) as count FROM orders');
-    const totalRevenue = await get('SELECT COALESCE(SUM(total), 0) as total FROM orders');
-    const pendingOrders = await get('SELECT COUNT(*) as count FROM orders WHERE status = ?', ['pending']);
-    const lowStock = await all('SELECT name, stock FROM products WHERE stock < 10 ORDER BY stock ASC LIMIT 5');
-    const recentOrders = await all('SELECT order_id, status, total, created_at FROM orders ORDER BY created_at DESC LIMIT 5');
-    const statusBreakdown = await all('SELECT status, COUNT(*) as count FROM orders GROUP BY status');
-    const salesByDay = await all(`
-      SELECT date(created_at) as day, COUNT(*) as orders, COALESCE(SUM(total), 0) as revenue
-      FROM orders
-      WHERE created_at >= date('now', '-7 days')
-      GROUP BY date(created_at)
-      ORDER BY day ASC
-    `);
-    const categorySales = await all(`
-      SELECT p.category, COUNT(*) as count, COALESCE(SUM(o.total), 0) as revenue
-      FROM orders o
-      JOIN json_each(o.items_json) as item
-      JOIN products p ON p.id = json_extract(item.value, '$.id')
-      GROUP BY p.category
-    `);
+    const [
+      revenueRow,
+      ordersRow,
+      productsRow,
+      customersRow,
+      recentOrders,
+      topProducts
+    ] = await Promise.all([
+      get('SELECT SUM(total) as total FROM orders WHERE status != ?', ['cancelled']),
+      get('SELECT COUNT(*) as count FROM orders WHERE status != ?', ['cancelled']),
+      get('SELECT COUNT(*) as count FROM products'),
+      get('SELECT COUNT(*) as count FROM users WHERE role = ?', ['customer']),
+      all('SELECT * FROM orders ORDER BY created_at DESC LIMIT 10'),
+      all('SELECT p.name, p.emoji, p.vendor, p.price * p.sold as revenue, p.sold FROM products p ORDER BY revenue DESC LIMIT 5')
+    ]);
+
+    // Daily revenue last 7 days
+    const days = [];
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      const dateStr = d.toISOString().split('T')[0];
+      days.push({ date: dateStr, label: d.toLocaleDateString('en-BD', { weekday: 'short' }) });
+    }
+    const dailyRevenue = await Promise.all(days.map(async day => {
+      const row = await get(
+        "SELECT SUM(total) as rev FROM orders WHERE date(created_at) = ? AND status != 'cancelled'",
+        [day.date]
+      );
+      return { ...day, revenue: row?.rev || 0 };
+    }));
+
+    // Category breakdown
+    const categories = await all('SELECT category, SUM(price * sold) as revenue FROM products GROUP BY category ORDER BY revenue DESC');
 
     res.json({
-      stats: {
-        totalProducts: totalProducts.count,
-        totalOrders: totalOrders.count,
-        totalRevenue: totalRevenue.total,
-        pendingOrders: pendingOrders.count,
-        lowStockItems: lowStock
-      },
-      recentOrders,
-      statusBreakdown,
-      salesByDay,
-      categorySales
+      revenue: revenueRow?.total || 0,
+      orders: ordersRow?.count || 0,
+      products: productsRow?.count || 0,
+      customers: customersRow?.count || 0,
+      dailyRevenue,
+      topProducts,
+      categories,
+      recentOrders: recentOrders.map(o => ({
+        ...o,
+        items: JSON.parse(o.items_json || '[]')
+      }))
     });
   } catch (err) {
     console.error('Analytics error:', err);
-    res.status(500).json({ error: 'Failed to fetch analytics' });
+    res.status(500).json({ error: 'Server error' });
   }
 });
 

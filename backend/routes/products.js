@@ -1,163 +1,117 @@
 const express = require('express');
 const router = express.Router();
-const { all, get, run } = require('../database');
+const { body } = require('express-validator');
+const { run, get, all } = require('../database');
 const { authenticateToken, requireAdmin } = require('../middleware/auth');
-const { adminLimiter } = require('../middleware/rateLimiter');
+const { handleValidation, stripTags } = require('../middleware/validate');
 
-// GET /api/products - public, list all products
+const productValidation = [
+  body('name').trim().notEmpty().withMessage('Name required').isLength({ max: 200 }),
+  body('category').trim().notEmpty().withMessage('Category required').isLength({ max: 100 }),
+  body('vendor').trim().notEmpty().withMessage('Vendor required').isLength({ max: 100 }),
+  body('price').isFloat({ min: 0 }).withMessage('Price must be a positive number'),
+  body('stock').optional().isInt({ min: 0 }).withMessage('Stock must be a non-negative integer'),
+  body('description').optional({ checkFalsy: true }).trim().isLength({ max: 5000 })
+];
+
+// GET /api/products — public
 router.get('/', async (req, res) => {
   try {
-    const rows = await all('SELECT * FROM products ORDER BY id ASC');
-    const products = rows.map(row => ({
-      id: row.id,
-      name: row.name,
-      category: row.category,
-      vendor: row.vendor,
-      price: row.price,
-      origPrice: row.orig_price,
-      stock: row.stock,
-      emoji: row.emoji,
-      colors: JSON.parse(row.colors_json || '[]'),
-      sizes: JSON.parse(row.sizes_json || '[]'),
-      desc: row.description,
-      badge: row.badge,
-      sold: row.sold,
-      material: row.material,
-      care: row.care,
-      origin: row.origin,
-      subs: JSON.parse(row.subs_json || '[]')
+    const products = await all('SELECT * FROM products ORDER BY id ASC');
+    const parsed = products.map(p => ({
+      ...p,
+      colors: tryParse(p.colors_json, []),
+      sizes: tryParse(p.sizes_json, []),
+      subs: tryParse(p.subs_json, [])
     }));
-    res.json({ products });
+    res.json({ products: parsed, total: parsed.length });
   } catch (err) {
-    console.error('Products fetch error:', err);
-    res.status(500).json({ error: 'Failed to fetch products' });
+    console.error('Get products error:', err);
+    res.status(500).json({ error: 'Server error' });
   }
 });
 
-// GET /api/products/:id - public, single product
+// GET /api/products/:id — public
 router.get('/:id', async (req, res) => {
   try {
-    const row = await get('SELECT * FROM products WHERE id = ?', [req.params.id]);
-    if (!row) return res.status(404).json({ error: 'Product not found' });
-    
+    const p = await get('SELECT * FROM products WHERE id = ?', [req.params.id]);
+    if (!p) return res.status(404).json({ error: 'Product not found' });
     res.json({
-      product: {
-        id: row.id,
-        name: row.name,
-        category: row.category,
-        vendor: row.vendor,
-        price: row.price,
-        origPrice: row.orig_price,
-        stock: row.stock,
-        emoji: row.emoji,
-        colors: JSON.parse(row.colors_json || '[]'),
-        sizes: JSON.parse(row.sizes_json || '[]'),
-        desc: row.description,
-        badge: row.badge,
-        sold: row.sold,
-        material: row.material,
-        care: row.care,
-        origin: row.origin,
-        subs: JSON.parse(row.subs_json || '[]')
-      }
+      ...p,
+      colors: tryParse(p.colors_json, []),
+      sizes: tryParse(p.sizes_json, []),
+      subs: tryParse(p.subs_json, [])
     });
   } catch (err) {
-    console.error('Product fetch error:', err);
-    res.status(500).json({ error: 'Failed to fetch product' });
+    res.status(500).json({ error: 'Server error' });
   }
 });
 
-// POST /api/products - admin only, create product
-router.post('/', authenticateToken, requireAdmin, adminLimiter, async (req, res) => {
-  const {
-    name, category, vendor, price, origPrice, stock, emoji,
-    colors, sizes, desc, badge, material, care, origin, subs
-  } = req.body;
-
-  if (!name || !category || !vendor || price === undefined || stock === undefined) {
-    return res.status(400).json({ error: 'Name, category, vendor, price, and stock are required' });
-  }
-
+// POST /api/products — admin only
+router.post('/', authenticateToken, requireAdmin, productValidation, handleValidation, async (req, res) => {
+  const { price, origPrice, stock, emoji, colors, sizes, badge, material, care, origin, subs } = req.body;
+  const name = stripTags(req.body.name);
+  const category = stripTags(req.body.category);
+  const vendor = stripTags(req.body.vendor);
+  const description = stripTags(req.body.description || '');
   try {
     const result = await run(
-      `INSERT INTO products (name, category, vendor, price, orig_price, stock, emoji, 
-       colors_json, sizes_json, description, badge, material, care, origin, subs_json)
+      `INSERT INTO products (name, category, vendor, price, orig_price, stock, emoji, colors_json, sizes_json, description, badge, material, care, origin, subs_json)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [
-        name, category, vendor, price, origPrice || null, stock, emoji || '',
-        JSON.stringify(colors || []), JSON.stringify(sizes || []), desc || '',
-        badge || '', material || '', care || '', origin || '', JSON.stringify(subs || [])
-      ]
+      [name, category, vendor, price, origPrice || null, stock || 0, emoji || '👗',
+       JSON.stringify(colors || []), JSON.stringify(sizes || []),
+       description || '', badge || '', material || '', care || '', origin || 'Bangladesh',
+       JSON.stringify(subs || [])]
     );
-
-    const product = await get('SELECT * FROM products WHERE id = ?', [result.id]);
-    res.status(201).json({ product: { ...product, colors: JSON.parse(product.colors_json || '[]'), sizes: JSON.parse(product.sizes_json || '[]'), subs: JSON.parse(product.subs_json || '[]') } });
+    const created = await get('SELECT * FROM products WHERE id = ?', [result.id]);
+    res.status(201).json(created);
   } catch (err) {
-    console.error('Product create error:', err);
-    res.status(500).json({ error: 'Failed to create product' });
+    console.error('Create product error:', err);
+    res.status(500).json({ error: 'Server error' });
   }
 });
 
-// PUT /api/products/:id - admin only, update product
-router.put('/:id', authenticateToken, requireAdmin, adminLimiter, async (req, res) => {
-  const {
-    name, category, vendor, price, origPrice, stock, emoji,
-    colors, sizes, desc, badge, material, care, origin, subs
-  } = req.body;
-
+// PUT /api/products/:id — admin only
+router.put('/:id', authenticateToken, requireAdmin, productValidation, handleValidation, async (req, res) => {
+  const { price, origPrice, stock, emoji, colors, sizes, badge, material, care, origin, subs } = req.body;
+  const name = stripTags(req.body.name);
+  const category = stripTags(req.body.category);
+  const vendor = stripTags(req.body.vendor);
+  const description = stripTags(req.body.description || '');
   try {
     const existing = await get('SELECT id FROM products WHERE id = ?', [req.params.id]);
     if (!existing) return res.status(404).json({ error: 'Product not found' });
-
     await run(
-      `UPDATE products SET
-       name = COALESCE(?, name),
-       category = COALESCE(?, category),
-       vendor = COALESCE(?, vendor),
-       price = COALESCE(?, price),
-       orig_price = COALESCE(?, orig_price),
-       stock = COALESCE(?, stock),
-       emoji = COALESCE(?, emoji),
-       colors_json = COALESCE(?, colors_json),
-       sizes_json = COALESCE(?, sizes_json),
-       description = COALESCE(?, description),
-       badge = COALESCE(?, badge),
-       material = COALESCE(?, material),
-       care = COALESCE(?, care),
-       origin = COALESCE(?, origin),
-       subs_json = COALESCE(?, subs_json),
-       updated_at = CURRENT_TIMESTAMP
-       WHERE id = ?`,
-      [
-        name, category, vendor, price, origPrice, stock, emoji,
-        colors ? JSON.stringify(colors) : null,
-        sizes ? JSON.stringify(sizes) : null,
-        desc, badge, material, care, origin,
-        subs ? JSON.stringify(subs) : null,
-        req.params.id
-      ]
+      `UPDATE products SET name=?, category=?, vendor=?, price=?, orig_price=?, stock=?, emoji=?,
+       colors_json=?, sizes_json=?, description=?, badge=?, material=?, care=?, origin=?, subs_json=?,
+       updated_at=CURRENT_TIMESTAMP WHERE id=?`,
+      [name, category, vendor, price, origPrice || null, stock, emoji,
+       JSON.stringify(colors || []), JSON.stringify(sizes || []),
+       description || '', badge || '', material || '', care || '', origin || 'Bangladesh',
+       JSON.stringify(subs || []), req.params.id]
     );
-
-    const product = await get('SELECT * FROM products WHERE id = ?', [req.params.id]);
-    res.json({ product: { ...product, colors: JSON.parse(product.colors_json || '[]'), sizes: JSON.parse(product.sizes_json || '[]'), subs: JSON.parse(product.subs_json || '[]') } });
+    const updated = await get('SELECT * FROM products WHERE id = ?', [req.params.id]);
+    res.json(updated);
   } catch (err) {
-    console.error('Product update error:', err);
-    res.status(500).json({ error: 'Failed to update product' });
+    console.error('Update product error:', err);
+    res.status(500).json({ error: 'Server error' });
   }
 });
 
-// DELETE /api/products/:id - admin only
-router.delete('/:id', authenticateToken, requireAdmin, adminLimiter, async (req, res) => {
+// DELETE /api/products/:id — admin only
+router.delete('/:id', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const existing = await get('SELECT id FROM products WHERE id = ?', [req.params.id]);
     if (!existing) return res.status(404).json({ error: 'Product not found' });
-
     await run('DELETE FROM products WHERE id = ?', [req.params.id]);
-    res.json({ message: 'Product deleted successfully' });
+    res.json({ message: 'Product deleted' });
   } catch (err) {
-    console.error('Product delete error:', err);
-    res.status(500).json({ error: 'Failed to delete product' });
+    res.status(500).json({ error: 'Server error' });
   }
 });
+
+function tryParse(val, fallback) {
+  try { return val ? JSON.parse(val) : fallback; } catch { return fallback; }
+}
 
 module.exports = router;

@@ -1,0 +1,25 @@
+services:
+  - type: web
+    name: drape-fashion-os
+    env: docker
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3000
+      - key: JWT_ACCESS_SECRET
+        generateValue: true
+      - key: JWT_REFRESH_SECRET
+        generateValue: true
+      - key: CORS_ORIGIN
+        value: https://drape-fashion-os.onrender.com
+      - key: DB_PATH
+        value: /app/data/drape.db
+      - key: ADMIN_PATH
+        generateValue: true
+    disk:
+      name: drape-db
+      mountPath: /app/data
+      sizeGB: 1

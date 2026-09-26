@@ -41,13 +41,13 @@ function autoIncrement() {
 }
 
 function datetimeDefault() {
-  return USE_PG ? 'DEFAULT CURRENT_TIMESTAMP' : "DEFAULT CURRENT_TIMESTAMP";
+  return USE_PG ? 'DEFAULT CURRENT_TIMESTAMP' : 'DEFAULT CURRENT_TIMESTAMP';
 }
 
 // SQLite helpers
 function sqliteRun(sql, params = []) {
   return new Promise((resolve, reject) => {
-    db.run(sql, params, function(err) {
+    db.run(sql, params, function (err) {
       if (err) reject(err);
       else resolve({ id: this.lastID, changes: this.changes });
     });
@@ -122,7 +122,14 @@ async function transaction(ops) {
     const client = await pool.connect();
     try {
       await client.query('BEGIN');
-      const result = await ops({ run: (s, p) => client.query(dialect(s), p).then(r => ({ id: r.rows[0]?.id || null, changes: r.rowCount })), get: (s, p) => client.query(dialect(s), p).then(r => r.rows[0] || null), all: (s, p) => client.query(dialect(s), p).then(r => r.rows) });
+      const result = await ops({
+        run: (s, p) =>
+          client
+            .query(dialect(s), p)
+            .then((r) => ({ id: r.rows[0]?.id || null, changes: r.rowCount })),
+        get: (s, p) => client.query(dialect(s), p).then((r) => r.rows[0] || null),
+        all: (s, p) => client.query(dialect(s), p).then((r) => r.rows)
+      });
       await client.query('COMMIT');
       return result;
     } catch (e) {
@@ -134,14 +141,21 @@ async function transaction(ops) {
   } else {
     return new Promise((resolve, reject) => {
       db.run('BEGIN TRANSACTION', async (err) => {
-        if (err) { reject(err); return; }
+        if (err) {
+          reject(err);
+          return;
+        }
         try {
           const tRun = (s, p) => sqliteRun(s, p);
           const tGet = (s, p) => sqliteGet(s, p);
           const tAll = (s, p) => sqliteAll(s, p);
           const result = await ops({ run: tRun, get: tGet, all: tAll });
           db.run('COMMIT', (err) => {
-            if (err) { reject(err); } else { resolve(result); }
+            if (err) {
+              reject(err);
+            } else {
+              resolve(result);
+            }
           });
         } catch (e) {
           db.run('ROLLBACK', () => reject(e));
@@ -251,6 +265,66 @@ async function initDatabase() {
       await pool.query(`ALTER TABLE orders ADD COLUMN customer_lname TEXT`);
     }
 
+    // payment_sessions table for SSLCommerz payment integration
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS payment_sessions (
+        id SERIAL PRIMARY KEY,
+        session_id TEXT NOT NULL UNIQUE,
+        order_id TEXT NOT NULL,
+        amount INTEGER NOT NULL,
+        currency TEXT NOT NULL DEFAULT 'BDT',
+        status TEXT NOT NULL DEFAULT 'pending',
+        tran_id TEXT,
+        val_id TEXT,
+        card_type TEXT,
+        card_no TEXT,
+        bank_tran_id TEXT,
+        gateway_response_json TEXT,
+        idempotency_key TEXT UNIQUE,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+    await pool.query(
+      `CREATE INDEX IF NOT EXISTS idx_payment_sessions_order_id ON payment_sessions(order_id)`
+    );
+    await pool.query(
+      `CREATE INDEX IF NOT EXISTS idx_payment_sessions_idempotency_key ON payment_sessions(idempotency_key)`
+    );
+    await pool.query(
+      `CREATE INDEX IF NOT EXISTS idx_payment_sessions_val_id ON payment_sessions(val_id)`
+    );
+
+    // webhook_logs table for payment webhook auditing
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS webhook_logs (
+        id SERIAL PRIMARY KEY,
+        source TEXT NOT NULL,
+        event_type TEXT NOT NULL,
+        payload_json TEXT NOT NULL,
+        headers_json TEXT,
+        verified BOOLEAN NOT NULL DEFAULT FALSE,
+        processing_result TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+    await pool.query(
+      `CREATE INDEX IF NOT EXISTS idx_webhook_logs_source_event ON webhook_logs(source, event_type)`
+    );
+    await pool.query(
+      `CREATE INDEX IF NOT EXISTS idx_webhook_logs_verified ON webhook_logs(verified)`
+    );
+
+    // Migration: add idempotency_key if table exists without it
+    try {
+      await pool.query(`SELECT idempotency_key FROM payment_sessions LIMIT 1`);
+    } catch (e) {
+      await pool.query(`ALTER TABLE payment_sessions ADD COLUMN idempotency_key TEXT UNIQUE`);
+      await pool.query(
+        `CREATE INDEX IF NOT EXISTS idx_payment_sessions_idempotency_key ON payment_sessions(idempotency_key)`
+      );
+    }
+
     return;
   }
 
@@ -333,10 +407,62 @@ async function initDatabase() {
         success BOOLEAN NOT NULL DEFAULT 0,
         user_agent TEXT,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-      )`, (err) => {
-        if (err) reject(err);
-        else resolve();
-      });
+      )`);
+
+      // payment_sessions table for SSLCommerz payment integration
+      db.run(`CREATE TABLE IF NOT EXISTS payment_sessions (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        session_id TEXT NOT NULL UNIQUE,
+        order_id TEXT NOT NULL,
+        amount INTEGER NOT NULL,
+        currency TEXT NOT NULL DEFAULT 'BDT',
+        status TEXT NOT NULL DEFAULT 'pending',
+        tran_id TEXT,
+        val_id TEXT,
+        card_type TEXT,
+        card_no TEXT,
+        bank_tran_id TEXT,
+        gateway_response_json TEXT,
+        idempotency_key TEXT UNIQUE,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      )`);
+
+      // webhook_logs table for payment webhook auditing
+      db.run(`CREATE TABLE IF NOT EXISTS webhook_logs (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        source TEXT NOT NULL,
+        event_type TEXT NOT NULL,
+        payload_json TEXT NOT NULL,
+        headers_json TEXT,
+        verified BOOLEAN NOT NULL DEFAULT 0,
+        processing_result TEXT,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      )`);
+
+      // Create indexes for payment_sessions
+      db.run(
+        `CREATE INDEX IF NOT EXISTS idx_payment_sessions_order_id ON payment_sessions(order_id)`
+      );
+      db.run(
+        `CREATE INDEX IF NOT EXISTS idx_payment_sessions_idempotency_key ON payment_sessions(idempotency_key)`
+      );
+      db.run(`CREATE INDEX IF NOT EXISTS idx_payment_sessions_val_id ON payment_sessions(val_id)`);
+
+      // Create indexes for webhook_logs
+      db.run(
+        `CREATE INDEX IF NOT EXISTS idx_webhook_logs_source_event ON webhook_logs(source, event_type)`
+      );
+      db.run(`CREATE INDEX IF NOT EXISTS idx_webhook_logs_verified ON webhook_logs(verified)`);
+
+      // Migration: add idempotency_key if table exists without it (SQLite doesn't support IF NOT EXISTS for columns)
+      db.run(
+        `CREATE INDEX IF NOT EXISTS idx_payment_sessions_idempotency_key_unique ON payment_sessions(idempotency_key)`,
+        (err) => {
+          if (err) reject(err);
+          else resolve();
+        }
+      );
     });
   });
 }

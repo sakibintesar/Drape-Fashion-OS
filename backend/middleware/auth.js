@@ -2,8 +2,27 @@ require('dotenv').config();
 const jwt = require('jsonwebtoken');
 const { get } = require('../database');
 
-const ACCESS_SECRET = process.env.JWT_ACCESS_SECRET || 'drape-access-secret-change-in-production';
-const REFRESH_SECRET = process.env.JWT_REFRESH_SECRET || 'drape-refresh-secret-change-in-production';
+const DEFAULT_ACCESS_SECRET = 'drape-access-secret-change-in-production';
+const DEFAULT_REFRESH_SECRET = 'drape-refresh-secret-change-in-production';
+
+const ACCESS_SECRET = process.env.JWT_ACCESS_SECRET || DEFAULT_ACCESS_SECRET;
+const REFRESH_SECRET = process.env.JWT_REFRESH_SECRET || DEFAULT_REFRESH_SECRET;
+
+// Fail fast: never allow the app to boot in production with a default/weak secret.
+if (process.env.NODE_ENV === 'production') {
+  const usingDefault =
+    ACCESS_SECRET === DEFAULT_ACCESS_SECRET || REFRESH_SECRET === DEFAULT_REFRESH_SECRET;
+  const tooShort = ACCESS_SECRET.length < 32 || REFRESH_SECRET.length < 32;
+  if (usingDefault || tooShort) {
+    console.error(
+      '\n❌ FATAL: JWT_ACCESS_SECRET / JWT_REFRESH_SECRET are missing, default, or too short for production.'
+    );
+    console.error(
+      "   Generate real secrets with: node -e \"console.log(require('crypto').randomBytes(64).toString('hex'))\"\n"
+    );
+    process.exit(1);
+  }
+}
 
 function authenticateToken(req, res, next) {
   const authHeader = req.headers['authorization'];
@@ -22,7 +41,10 @@ function authenticateToken(req, res, next) {
     }
 
     try {
-      const user = await get('SELECT id, username, email, role, fname, lname, phone, address, city, postcode FROM users WHERE id = ?', [decoded.userId]);
+      const user = await get(
+        'SELECT id, username, email, role, fname, lname, phone, address, city, postcode FROM users WHERE id = ?',
+        [decoded.userId]
+      );
       if (!user) {
         return res.status(403).json({ error: 'User no longer exists' });
       }
@@ -68,11 +90,42 @@ function verifyRefreshToken(token) {
   return jwt.verify(token, REFRESH_SECRET);
 }
 
+// Optional authentication - attaches user if token is valid, but doesn't require it
+function optionalAuth(req, res, next) {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
+
+  if (!token) {
+    return next(); // No token, continue as guest
+  }
+
+  jwt.verify(token, ACCESS_SECRET, async (err, decoded) => {
+    if (err) {
+      return next(); // Invalid token, continue as guest
+    }
+
+    try {
+      const user = await get(
+        'SELECT id, username, email, role, fname, lname, phone, address, city, postcode FROM users WHERE id = ?',
+        [decoded.userId]
+      );
+      if (user) {
+        req.user = user;
+      }
+      next();
+    } catch (dbErr) {
+      console.error('Optional auth DB error:', dbErr);
+      next(); // Continue as guest on error
+    }
+  });
+}
+
 module.exports = {
   authenticateToken,
   requireAdmin,
   requireCustomer,
   requireAuth,
+  optionalAuth,
   generateAccessToken,
   generateRefreshToken,
   verifyRefreshToken,

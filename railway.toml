@@ -1,0 +1,54 @@
+# Railway Deployment Configuration for DRAPE Fashion OS
+# Railway auto-detects this file and uses it for builds/deploys
+
+[build]
+# Use the Dockerfile for consistent builds
+builder = "dockerfile"
+dockerfilePath = "Dockerfile"
+
+[deploy]
+# Health check endpoint
+healthcheckPath = "/api/health"
+healthcheckTimeout = 30
+restartPolicyType = "on_failure"
+restartPolicyMaxRetries = 3
+
+# Resource limits (adjust based on Railway plan)
+# [resources]
+# memory = 512
+# cpu = 0.5
+
+[env]
+# Required: Generate these in Railway dashboard (Variables tab)
+# JWT_ACCESS_SECRET = "your-64-char-hex-secret"
+# JWT_REFRESH_SECRET = "your-other-64-char-hex-secret"
+
+# Required: Set to your Railway public URL
+# CORS_ORIGIN = "https://your-app-name.railway.app"
+
+# Required for production
+NODE_ENV = "production"
+PORT = "3000"
+
+# Admin portal path (generate a random one per deploy)
+# ADMIN_PATH = "portal-xxxxxxxx"
+
+# Database: Railway provides SQLite persistence via volume
+# DB_PATH = "/app/data/drape.db"
+
+# Optional: Cloudinary for product images
+# CLOUDINARY_URL = "cloudinary://..."
+
+# Optional: Anthropic API key for AI captions
+# ANTHROPIC_API_KEY = "sk-ant-..."
+
+# Optional: PostgreSQL (if using instead of SQLite)
+# DATABASE_URL = "postgresql://..."
+
+# Railway automatically provides these:
+# - RAILWAY_STATIC_URL (public URL)
+# - RAILWAY_PRIVATE_DOMAIN (internal)
+# - PORT (always 3000 in container)
+
+# Example of using Railway's provided URL for CORS:
+# CORS_ORIGIN = "${{RAILWAY_STATIC_URL}}"

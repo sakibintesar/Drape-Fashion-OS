@@ -1,5 +1,0 @@
-backend/node_modules
-backend/.env
-backend/drape.db-shm
-backend/drape.db-wal
-.git
