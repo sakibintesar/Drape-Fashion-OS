@@ -8,7 +8,7 @@
     "dev": "node backend/server.js",
     "seed": "node backend/seed.js",
     "setup": "node backend/seed.js && node backend/server.js",
-    "prepare": "husky"
+    "prepare": "husky || true"
   },
   "engines": {
     "node": ">=18.0.0"
