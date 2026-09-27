@@ -447,6 +447,19 @@ async function initDatabase() {
     } catch (e) {
       console.warn('[database] FTS5 setup skipped (may not be supported):', e.message);
     }
+
+    // Migration: add missing columns to existing users table (for older databases)
+    const userColumns = ['fname', 'lname', 'phone', 'address', 'city', 'postcode'];
+    for (const col of userColumns) {
+      try {
+        sqliteDb.exec(`ALTER TABLE users ADD COLUMN ${col} TEXT`);
+        console.log(`[database] Added missing column users.${col}`);
+      } catch (e) {
+        if (!e.message.includes('duplicate column')) {
+          console.warn(`[database] Migration for users.${col} skipped:`, e.message);
+        }
+      }
+    }
   }
 }
 

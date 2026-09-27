@@ -79,7 +79,7 @@ app.get('/api/health', (req, res) => {
     status: 'ok',
     env: NODE_ENV,
     timestamp: new Date().toISOString(),
-    version: '4.1.0'
+    version: '4.1.1'
   });
 });
 

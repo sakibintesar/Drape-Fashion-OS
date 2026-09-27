@@ -1,6 +1,6 @@
 {
   "name": "drape-fashion-os",
-  "version": "4.1.0",
+  "version": "4.1.1",
   "description": "DRAPE Fashion OS — Full-stack e-commerce for Bangladesh artisan fashion",
   "main": "backend/server.js",
   "scripts": {
