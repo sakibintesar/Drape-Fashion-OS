@@ -1,0 +1,13 @@
+ℹ️ No notification providers configured — using no-op fallback
+Connected to SQLite database at C:\Users\sakib\Drape-Fashion-OS\backend\drape.db
+✅ Database ready
+
+🚀 DRAPE Fashion OS v4.1 running
+   Port      : 5003
+   Env       : development
+   CORS      : *
+   Health    : http://localhost:5003/api/health
+   Storefront: http://localhost:5003/
+   Admin     : http://localhost:5003/portal-3ee0946b  (set ADMIN_PATH env var to customize)
+
+[2026-09-27T18:47:04.643Z] ::1 POST /api/auth/login

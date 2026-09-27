@@ -346,6 +346,32 @@ async function initDatabase() {
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
       )`);
 
+      // Migration: add missing columns to existing users table
+      db.run(`ALTER TABLE users ADD COLUMN fname TEXT`, (err) => {
+        if (err && !err.message.includes('duplicate column'))
+          console.log('fname column already exists or migration skipped');
+      });
+      db.run(`ALTER TABLE users ADD COLUMN lname TEXT`, (err) => {
+        if (err && !err.message.includes('duplicate column'))
+          console.log('lname column already exists or migration skipped');
+      });
+      db.run(`ALTER TABLE users ADD COLUMN phone TEXT`, (err) => {
+        if (err && !err.message.includes('duplicate column'))
+          console.log('phone column already exists or migration skipped');
+      });
+      db.run(`ALTER TABLE users ADD COLUMN address TEXT`, (err) => {
+        if (err && !err.message.includes('duplicate column'))
+          console.log('address column already exists or migration skipped');
+      });
+      db.run(`ALTER TABLE users ADD COLUMN city TEXT`, (err) => {
+        if (err && !err.message.includes('duplicate column'))
+          console.log('city column already exists or migration skipped');
+      });
+      db.run(`ALTER TABLE users ADD COLUMN postcode TEXT`, (err) => {
+        if (err && !err.message.includes('duplicate column'))
+          console.log('postcode column already exists or migration skipped');
+      });
+
       db.run(`CREATE TABLE IF NOT EXISTS products (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         name TEXT NOT NULL,
