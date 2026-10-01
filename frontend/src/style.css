@@ -33,16 +33,21 @@
   --transition-fast: 150ms ease;
   --transition-normal: 250ms ease;
   --transition-slow: 350ms ease;
+
+  /* Demo-specific easings */
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-out-quart: cubic-bezier(0.25, 1, 0.5, 1);
+  --ease-spring: cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  --ease-sharp: cubic-bezier(0.4, 0, 0.6, 1);
+  --ease-out-cubic: cubic-bezier(0.33, 1, 0.68, 1);
 }
 
 * {
   box-sizing: border-box;
 }
-
 html {
   scroll-behavior: smooth;
 }
-
 body {
   margin: 0;
   font-family: var(--font-sans);
@@ -52,45 +57,36 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
-
 #app {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
 }
 
-/* Focus visible for accessibility */
 :focus-visible {
   outline: 2px solid var(--color-primary);
   outline-offset: 2px;
 }
-
-/* Selection styles */
 ::selection {
   background-color: var(--color-primary);
   color: white;
 }
 
-/* Scrollbar styling */
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
 }
-
 ::-webkit-scrollbar-track {
   background: transparent;
 }
-
 ::-webkit-scrollbar-thumb {
   background-color: var(--color-border);
   border-radius: var(--radius-full);
 }
-
 ::-webkit-scrollbar-thumb:hover {
   background-color: var(--color-text-muted);
 }
 
-/* Reduced motion */
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -102,46 +98,53 @@ body {
   }
 }
 
-/* Utility classes for DRAPE design system */
 .container {
   width: 100%;
   max-width: 1280px;
   margin: 0 auto;
   padding: 0 1.5rem;
 }
-
 @media (min-width: 640px) {
   .container {
     padding: 0 2rem;
   }
 }
-
 @media (min-width: 1024px) {
   .container {
     padding: 0 3rem;
   }
 }
 
-/* Typography */
 .text-balance {
   text-wrap: balance;
 }
-
 .font-serif {
   font-family: var(--font-serif);
 }
 
-/* Animation utilities */
 .animate-fade-in {
   animation: fadeIn var(--transition-normal) ease-out;
 }
-
 .animate-slide-up {
-  animation: slideUp var(--transition-normal) ease-out;
+  animation: slideUp var(--transition-normal) var(--ease-out-cubic);
 }
-
 .animate-scale-in {
-  animation: scaleIn var(--transition-fast) ease-out;
+  animation: scaleIn var(--transition-fast) var(--ease-out-quart);
+}
+.animate-shimmer {
+  animation: shimmer 2s var(--ease-out-expo) infinite;
+}
+.animate-shimmer-slow {
+  animation: shimmer 4s var(--ease-out-expo) infinite;
+}
+.animate-bounce {
+  animation: bounce 1s var(--ease-spring) infinite;
+}
+.animate-ripple {
+  animation: ripple 600ms var(--ease-out-quart) forwards;
+}
+.animate-scale-fade {
+  animation: scaleFade 400ms var(--ease-spring) forwards;
 }
 
 @keyframes fadeIn {
@@ -152,7 +155,6 @@ body {
     opacity: 1;
   }
 }
-
 @keyframes slideUp {
   from {
     opacity: 0;
@@ -163,7 +165,6 @@ body {
     transform: translateY(0);
   }
 }
-
 @keyframes scaleIn {
   from {
     opacity: 0;
@@ -172,5 +173,158 @@ body {
   to {
     opacity: 1;
     transform: scale(1);
+  }
+}
+@keyframes shimmer {
+  0% {
+    background-position: -200% center;
+  }
+  100% {
+    background-position: 200% center;
+  }
+}
+@keyframes bounce {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}
+@keyframes ripple {
+  from {
+    width: 0;
+    height: 0;
+    opacity: 0.4;
+  }
+  to {
+    width: 300px;
+    height: 300px;
+    opacity: 0;
+  }
+}
+@keyframes scaleFade {
+  from {
+    transform: scale(0);
+    opacity: 1;
+  }
+  to {
+    transform: scale(2);
+    opacity: 0;
+  }
+}
+
+.animate-stagger-1 {
+  animation-delay: 80ms;
+}
+.animate-stagger-2 {
+  animation-delay: 160ms;
+}
+.animate-stagger-3 {
+  animation-delay: 240ms;
+}
+.animate-stagger-4 {
+  animation-delay: 320ms;
+}
+.animate-stagger-5 {
+  animation-delay: 400ms;
+}
+.animate-stagger-6 {
+  animation-delay: 480ms;
+}
+
+html.lenis {
+  height: auto;
+}
+.lenis.lenis-smooth {
+  scroll-behavior: auto !important;
+}
+.lenis.lenis-smooth [data-lenis-prevent] {
+  overscroll-behavior: contain;
+}
+
+.demo-hero-gradient {
+  background: linear-gradient(
+    135deg,
+    var(--color-primary-light) 0%,
+    var(--color-background) 50%,
+    var(--color-primary-light) 100%
+  );
+}
+.demo-card-hover {
+  transition:
+    transform var(--transition-normal) var(--ease-out-quart),
+    box-shadow var(--transition-normal) var(--ease-out-quart),
+    border-color var(--transition-fast) var(--ease-sharp);
+}
+.demo-card-hover:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-xl);
+  border-color: var(--color-primary);
+}
+.text-gradient {
+  background: linear-gradient(
+    135deg,
+    var(--color-text) 0%,
+    var(--color-primary) 50%,
+    var(--color-text) 100%
+  );
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.perspective-1000 {
+  perspective: 1000px;
+}
+.preserve-3d {
+  transform-style: preserve-3d;
+}
+.vanta-canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+}
+@keyframes progressSpin {
+  from {
+    stroke-dashoffset: var(--circumference);
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
+
+/* Demo 2 — kinetic typography */
+@keyframes charRise {
+  from {
+    opacity: 0;
+    transform: translateY(0.55em) rotate(4deg);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) rotate(0deg);
+  }
+}
+@keyframes marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
   }
 }
