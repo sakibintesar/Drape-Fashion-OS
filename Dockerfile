@@ -17,6 +17,11 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY package.json ./
 COPY backend/ ./backend/
 COPY index.html admin.html app.js admin.js styles.css ./
+COPY assets/ ./assets/
+COPY images/ ./images/
+COPY videos/ ./videos/
+COPY vendor/ ./vendor/
+COPY favicon.svg icons.svg ./
 
 # Create data directory for SQLite persistence
 RUN mkdir -p /app/data && chown -R drape:drape /app
