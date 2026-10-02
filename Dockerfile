@@ -5,6 +5,7 @@ COPY package.json package-lock.json* ./
 RUN npm ci --omit=dev
 
 # ── Stage 2: Production image ──
+ARG CACHE_BUST=1
 FROM node:20-alpine AS runner
 WORKDIR /app
 
